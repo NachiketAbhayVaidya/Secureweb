@@ -1,445 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Abhedya Security Solutions</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <!-- Three.js + dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- EmailJS -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav id="navbar">
-    <div class="nav-inner">
-      <div class="logo">
-        <span class="logo-text">ABHEDYA</span>
-        <span class="logo-tag">SECURITY</span>
-      </div>
-      <ul class="nav-links">
-        <li><a href="#about">About</a></li>
-        <li><a href="#services">Services</a></li>
-        <li><a href="#difference">Why Us</a></li>
-        <li><a href="#team">Team</a></li>
-        <li><a href="#contact" class="nav-cta">Get Quote</a></li>
-      </ul>
-      <button class="hamburger" id="hamburger" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
+  <!-- LOADING SCREEN -->
+  <div id="loadingScreen">
+    <div class="ls-inner">
+      <div class="ls-logo">ABHEDYA</div>
+      <div class="ls-sub">SECURITY SOLUTIONS</div>
+      <div class="ls-bar-wrap"><div class="ls-bar" id="lsBar"></div></div>
+      <div class="ls-hint" id="lsHint">Initializing world…</div>
     </div>
-    <ul class="mobile-menu" id="mobileMenu">
-      <li><a href="#about">About</a></li>
-      <li><a href="#services">Services</a></li>
-      <li><a href="#difference">Why Us</a></li>
-      <li><a href="#team">Team</a></li>
-      <li><a href="#contact">Get Quote</a></li>
-    </ul>
+  </div>
+
+  <!-- CONTROLS HINT -->
+  <div id="controlsHint">
+    <span>⬆⬇⬅➡ or WASD — Move Guard</span>
+    <span>🖱 Drag — Orbit Camera</span>
+    <span>Click glowing zones to explore</span>
+  </div>
+
+  <!-- THREE.JS CANVAS -->
+  <canvas id="threeCanvas"></canvas>
+
+  <!-- HUD OVERLAY -->
+  <div id="hud">
+    <div class="hud-logo">
+      <span class="hud-name">ABHEDYA</span>
+      <span class="hud-tag">SECURITY</span>
+    </div>
+    <div id="zoneLabel" class="zone-label"></div>
+  </div>
+
+  <!-- MINI MAP -->
+  <div id="miniMap">
+    <canvas id="miniMapCanvas" width="160" height="160"></canvas>
+    <div class="mm-label">MAP</div>
+  </div>
+
+  <!-- INFO PANEL (slides in on zone enter) -->
+  <div id="infoPanel" class="info-panel hidden">
+    <button class="ip-close" id="ipClose">✕</button>
+    <div class="ip-icon" id="ipIcon"></div>
+    <div class="ip-tag" id="ipTag"></div>
+    <h2 class="ip-title" id="ipTitle"></h2>
+    <p class="ip-text" id="ipText"></p>
+    <ul class="ip-list" id="ipList"></ul>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottomNav">
+    <button class="bn-btn active" data-section="world">🌍 World</button>
+    <button class="bn-btn" data-section="services">🛡 Services</button>
+    <button class="bn-btn" data-section="team">👤 Team</button>
+    <button class="bn-btn" data-section="contact">📞 Contact</button>
   </nav>
 
-  <!-- HERO -->
-  <section id="hero">
-    <div class="hero-bg">
-      <div class="hero-cityscape">
-        <div class="building b1"></div>
-        <div class="building b2"></div>
-        <div class="building b3"></div>
-        <div class="building b4"></div>
-        <div class="building b5"></div>
-        <div class="building b6"></div>
-        <div class="building b7"></div>
-        <div class="stars" id="stars"></div>
-        <div class="moon"></div>
-        <div class="ground"></div>
+  <!-- SERVICES PANEL -->
+  <div id="servicesPanel" class="full-panel hidden">
+    <button class="fp-close" onclick="closePanel('servicesPanel')">✕</button>
+    <div class="fp-inner">
+      <div class="fp-tag">WHAT WE OFFER</div>
+      <h2 class="fp-title">Our <span>Services</span></h2>
+      <div class="services-grid">
+        <div class="sv-card"><span class="sv-icon">🏠</span><h3>Residential</h3><p>24/7 gate management, visitor logging and community safety.</p></div>
+        <div class="sv-card"><span class="sv-icon">🏢</span><h3>Corporate</h3><p>Professional guards, access systems and floor patrolling for IT parks and offices.</p></div>
+        <div class="sv-card"><span class="sv-icon">🏭</span><h3>Industrial</h3><p>Perimeter security, shift guards and safety protocol enforcement.</p></div>
+        <div class="sv-card"><span class="sv-icon">🎟</span><h3>Events</h3><p>Crowd management, VIP escorts and emergency response at events.</p></div>
+        <div class="sv-card"><span class="sv-icon">🧹</span><h3>Facility Mgmt</h3><p>Housekeeping staffing and integrated facility operations.</p></div>
+        <div class="sv-card"><span class="sv-icon">🚗</span><h3>Mobile Patrol</h3><p>Rapid response mobile units covering wider premises on schedule.</p></div>
       </div>
     </div>
-    <div class="hero-content">
-      <div class="hero-badge">EST. IN INDIA · TRUSTED NATIONWIDE</div>
-      <h1 class="hero-title">
-        <span class="line1">IMPENETRABLE.</span>
-        <span class="line2">UNWAVERING.</span>
-        <span class="line3">ABHEDYA.</span>
-      </h1>
-      <p class="hero-sub">Professional security that doesn't just wear a uniform — it earns one.</p>
-      <div class="hero-btns">
-        <a href="#services" class="btn-primary">Our Services</a>
-        <a href="#contact" class="btn-outline">Get Protected</a>
-      </div>
-    </div>
-    <div class="scroll-hint">
-      <span>Scroll to follow the guard</span>
-      <div class="scroll-arrow"></div>
-    </div>
-  </section>
+  </div>
 
-  <!-- SCROLL JOURNEY -->
-  <section id="journey">
-    <div class="journey-track">
-
-      <div class="path-container">
-        <svg id="journeySvg" viewBox="0 0 120 3000" preserveAspectRatio="none">
-          <path id="guardPath"
-            d="M60,0 C60,150 60,300 60,450 C60,600 60,750 60,900 C60,1050 60,1200 60,1350 C60,1500 60,1650 60,1800 C60,1950 60,2100 60,2250 C60,2400 60,2550 60,2700 C60,2850 60,3000 60,3000"
-            stroke="rgba(212,175,55,0.25)" stroke-width="2" fill="none" stroke-dasharray="8,6"/>
-        </svg>
-        <div id="guardCharacter" class="guard-character">
-          <div class="guard-svg-wrap">
-            <svg id="guardSvg" viewBox="0 0 60 120" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="30" cy="115" rx="14" ry="4" fill="rgba(0,0,0,0.3)" id="guardShadow"/>
-              <g id="legs">
-                <rect id="legL" x="22" y="80" width="8" height="28" rx="4" fill="#1a2540"/>
-                <rect id="legR" x="30" y="80" width="8" height="28" rx="4" fill="#1a2540"/>
-              </g>
-              <rect x="20" y="103" width="10" height="7" rx="3" fill="#0d1a2e"/>
-              <rect x="30" y="103" width="10" height="7" rx="3" fill="#0d1a2e"/>
-              <rect x="18" y="45" width="24" height="38" rx="5" fill="#1e3a5f"/>
-              <rect x="17" y="74" width="26" height="5" rx="2" fill="#D4AF37"/>
-              <rect x="24" y="52" width="12" height="10" rx="2" fill="#D4AF37" opacity="0.9"/>
-              <text x="30" y="60" text-anchor="middle" font-size="5" fill="#1e3a5f" font-weight="bold" font-family="Arial">A</text>
-              <g id="arms">
-                <rect id="armL" x="8" y="46" width="10" height="26" rx="5" fill="#1e3a5f" transform-origin="13 46"/>
-                <rect id="armR" x="42" y="46" width="10" height="26" rx="5" fill="#1e3a5f" transform-origin="47 46"/>
-              </g>
-              <ellipse cx="13" cy="73" rx="5" ry="5" fill="#0d1a2e"/>
-              <ellipse cx="47" cy="73" rx="5" ry="5" fill="#0d1a2e"/>
-              <rect x="26" y="36" width="8" height="12" rx="3" fill="#c8a882"/>
-              <ellipse cx="30" cy="28" rx="13" ry="14" fill="#c8a882"/>
-              <rect x="16" y="16" width="28" height="10" rx="3" fill="#1e3a5f"/>
-              <rect x="13" y="21" width="34" height="5" rx="2" fill="#1e3a5f"/>
-              <rect x="23" y="10" width="14" height="10" rx="3" fill="#1e3a5f"/>
-              <ellipse cx="30" cy="17" rx="4" ry="3" fill="#D4AF37"/>
-              <ellipse cx="25" cy="29" rx="2.5" ry="2.5" fill="#1a1a2e"/>
-              <ellipse cx="35" cy="29" rx="2.5" ry="2.5" fill="#1a1a2e"/>
-              <ellipse cx="25.5" cy="28.5" rx="1" ry="1" fill="white"/>
-              <ellipse cx="35.5" cy="28.5" rx="1" ry="1" fill="white"/>
-              <path d="M25 34 Q30 37 35 34" stroke="#5a3a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-              <rect id="walkie" x="4" y="60" width="8" height="12" rx="2" fill="#D4AF37" opacity="0"/>
-              <rect id="torch" x="49" y="60" width="6" height="16" rx="3" fill="#888" opacity="0"/>
-              <ellipse id="torchLight" cx="52" cy="60" rx="8" ry="4" fill="rgba(255,220,100,0.6)" opacity="0"/>
-            </svg>
+  <!-- TEAM PANEL -->
+  <div id="teamPanel" class="full-panel hidden">
+    <button class="fp-close" onclick="closePanel('teamPanel')">✕</button>
+    <div class="fp-inner">
+      <div class="fp-tag">LEADERSHIP</div>
+      <h2 class="fp-title">The Team Behind <span>The Shield</span></h2>
+      <div class="team-grid">
+        <div class="tm-card">
+          <div class="tm-img-wrap">
+            <img src="https://abhedya.net/img/founderimg.jpeg" alt="Ashutosh Gole" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+            <div class="tm-fallback">AG</div>
           </div>
-          <div class="speech-bubble" id="speechBubble"></div>
+          <div class="tm-tag">FOUNDER & CEO</div>
+          <h3>Ashutosh Gole</h3>
+          <p>Built Abhedya on a vision to transform private security with armed forces values — discipline, vigilance, and accountability.</p>
         </div>
-      </div>
-
-      <!-- CHECKPOINT 1 -->
-      <div class="checkpoint" id="cp0" data-cp="0">
-        <div class="cp-content left">
-          <div class="cp-icon">🛡️</div>
-          <div class="cp-number">01</div>
-          <h2 class="cp-title">What is <em>Abhedya</em>?</h2>
-          <p class="cp-text">Abhedya means <strong>"Impenetrable"</strong> — the foundation of our promise. Security that cannot be broken, compromised, or ignored. When you choose Abhedya, you hire protection, dignity, and peace of mind.</p>
-          <div class="cp-tag">OUR FOUNDATION</div>
-        </div>
-        <div class="cp-visual day-scene">
-          <div class="scene-gate">
-            <div class="gate-post left-post"></div>
-            <div class="gate-door left-door"></div>
-            <div class="gate-door right-door"></div>
-            <div class="gate-post right-post"></div>
+        <div class="tm-card">
+          <div class="tm-img-wrap">
+            <img src="https://abhedya.net/img/ad1.jpeg" alt="Col. Nikhil Gajjar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+            <div class="tm-fallback">NG</div>
           </div>
-          <div class="scene-label">Entrance Security</div>
+          <div class="tm-tag">ADVISOR & MENTOR</div>
+          <h3>Col. Nikhil Gajjar</h3>
+          <p>Decorated armed forces veteran bringing strategic security expertise and military discipline to Abhedya.</p>
         </div>
-      </div>
-
-      <!-- CHECKPOINT 2 -->
-      <div class="checkpoint" id="cp1" data-cp="1">
-        <div class="cp-visual building-scene">
-          <div class="mini-building">
-            <div class="mb-windows"></div>
+        <div class="tm-card">
+          <div class="tm-img-wrap">
+            <div class="tm-fallback" style="display:flex">SS</div>
           </div>
-          <div class="patrol-line">
-            <div class="patrol-dot"></div>
-          </div>
-          <div class="scene-label">Corporate Patrol</div>
-        </div>
-        <div class="cp-content right">
-          <div class="cp-icon">⚔️</div>
-          <div class="cp-number">02</div>
-          <h2 class="cp-title">Why We Started</h2>
-          <p class="cp-text">Private security today is often a checkbox — lowest cost, no training, no accountability. Abhedya was founded by professionals inspired by <strong>armed forces values</strong>: discipline, vigilance, and honor.</p>
-          <div class="cp-tag">OUR MISSION</div>
+          <div class="tm-tag">ADVISOR & MENTOR</div>
+          <h3>Col. Surojit Sinha (Retd.)</h3>
+          <p>Retired Colonel with extensive experience in security operations and national-level threat assessment.</p>
         </div>
       </div>
-
-      <!-- CHECKPOINT 3 -->
-      <div class="checkpoint" id="cp2" data-cp="2">
-        <div class="cp-content left">
-          <div class="cp-icon">🏢</div>
-          <div class="cp-number">03</div>
-          <h2 class="cp-title">Securing Buildings <em>By Day</em></h2>
-          <p class="cp-text">Our guards maintain <strong>access control</strong>, manage visitors, and run disciplined patrols around your premises — from gated communities to corporate IT parks — all day long.</p>
-          <ul class="cp-list">
-            <li>✓ Visitor & access management</li>
-            <li>✓ Perimeter patrolling</li>
-            <li>✓ CCTV coordination</li>
-          </ul>
-          <div class="cp-tag">DAY DEPLOYMENT</div>
-        </div>
-        <div class="cp-visual day-patrol">
-          <div class="sun-icon">☀️</div>
-          <div class="patrol-path-visual">
-            <div class="pp-dot d1"></div>
-            <div class="pp-dot d2"></div>
-            <div class="pp-dot d3"></div>
-          </div>
-          <div class="scene-label">Day Patrol</div>
-        </div>
-      </div>
-
-      <!-- CHECKPOINT 4 -->
-      <div class="checkpoint night-cp" id="cp3" data-cp="3">
-        <div class="cp-visual fire-scene">
-          <div class="fire-wrap">
-            <div class="flame f1"></div>
-            <div class="flame f2"></div>
-            <div class="flame f3"></div>
-          </div>
-          <div class="extinguisher"></div>
-          <div class="scene-label">Fire Training</div>
-        </div>
-        <div class="cp-content right">
-          <div class="cp-icon">🔥</div>
-          <div class="cp-number">04</div>
-          <h2 class="cp-title">Fire & Emergency <em>Training</em></h2>
-          <p class="cp-text">Every Abhedya guard undergoes rigorous <strong>fire safety and emergency response</strong> training. When seconds matter, our personnel execute trained SOPs calmly and decisively.</p>
-          <ul class="cp-list">
-            <li>✓ Fire extinguisher handling</li>
-            <li>✓ Emergency evacuation drills</li>
-            <li>✓ First response protocols</li>
-          </ul>
-          <div class="cp-tag">EMERGENCY TRAINING</div>
-        </div>
-      </div>
-
-      <!-- CHECKPOINT 5 -->
-      <div class="checkpoint night-cp" id="cp4" data-cp="4">
-        <div class="cp-content left">
-          <div class="cp-icon">🌙</div>
-          <div class="cp-number">05</div>
-          <h2 class="cp-title">On Guard <em>Through the Night</em></h2>
-          <p class="cp-text">Threats don't sleep — neither do we. Our night-shift guards are equipped with <strong>torches, walkies, and trained alertness</strong> to keep your property secure through the darkest hours.</p>
-          <ul class="cp-list">
-            <li>✓ Night patrol rotations</li>
-            <li>✓ Intruder detection</li>
-            <li>✓ Digital incident reporting</li>
-          </ul>
-          <div class="cp-tag">NIGHT SHIFT</div>
-        </div>
-        <div class="cp-visual night-scene">
-          <div class="moon-visual">🌕</div>
-          <div class="torch-beam"></div>
-          <div class="scene-label">Night Watch</div>
-        </div>
-      </div>
-
-      <!-- CHECKPOINT 6 -->
-      <div class="checkpoint" id="cp5" data-cp="5">
-        <div class="cp-visual sectors-visual">
-          <div class="sector-grid">
-            <div class="sector-item">🏠<span>Residential</span></div>
-            <div class="sector-item">🏢<span>Corporate</span></div>
-            <div class="sector-item">🏭<span>Industrial</span></div>
-            <div class="sector-item">🎟<span>Events</span></div>
-          </div>
-        </div>
-        <div class="cp-content right">
-          <div class="cp-icon">🎯</div>
-          <div class="cp-number">06</div>
-          <h2 class="cp-title">Who We <em>Protect</em></h2>
-          <p class="cp-text">From gated communities to high-stakes industrial sites — Abhedya deploys <strong>specialized solutions</strong> for each environment, never a one-size-fits-all template.</p>
-          <div class="cp-tag">OUR CLIENTS</div>
-        </div>
-      </div>
-
     </div>
-  </section>
+  </div>
 
-  <!-- THE ABHEDYA DIFFERENCE -->
-  <section id="difference">
-    <div class="section-header">
-      <div class="sh-tag">WHAT SETS US APART</div>
-      <h2 class="sh-title">The Abhedya <span>Difference</span></h2>
-      <p class="sh-sub">Our guards are not just hired — they are selected, trained, tested, and supervised.</p>
-    </div>
-    <div class="difference-grid">
-      <div class="diff-card" data-delay="0"><div class="diff-icon">🔍</div><h3>Background Verified</h3><p>Every guard undergoes thorough background verification before deployment.</p></div>
-      <div class="diff-card" data-delay="100"><div class="diff-icon">🗣️</div><h3>Etiquette Trained</h3><p>Communication and professional etiquette training for respectful interactions.</p></div>
-      <div class="diff-card" data-delay="200"><div class="diff-icon">🔥</div><h3>Fire Certified</h3><p>All personnel trained in fire safety, extinguisher use and emergency evacuation.</p></div>
-      <div class="diff-card" data-delay="300"><div class="diff-icon">🚪</div><h3>Access Control Expert</h3><p>Skilled in visitor management, RFID systems and controlled entry protocols.</p></div>
-      <div class="diff-card" data-delay="400"><div class="diff-icon">📋</div><h3>Reporting Discipline</h3><p>Daily patrol logs, digital reporting and incident documentation as standard.</p></div>
-      <div class="diff-card" data-delay="500"><div class="diff-icon">🎖️</div><h3>Military Values</h3><p>Founded on armed forces principles — honour, discipline and zero compromise.</p></div>
-    </div>
-  </section>
-
-  <!-- SUPERVISION CHAIN -->
-  <section id="supervision">
-    <div class="section-header">
-      <div class="sh-tag">ACCOUNTABILITY CHAIN</div>
-      <h2 class="sh-title">Supervision That <span>Never Sleeps</span></h2>
-    </div>
-    <div class="chain-container">
-      <div class="chain-step" data-step="0"><div class="chain-icon">👮</div><div class="chain-label">Guard</div></div>
-      <div class="chain-arrow">→</div>
-      <div class="chain-step" data-step="1"><div class="chain-icon">🧑‍✈️</div><div class="chain-label">Supervisor</div></div>
-      <div class="chain-arrow">→</div>
-      <div class="chain-step" data-step="2"><div class="chain-icon">🕵️</div><div class="chain-label">Field Officer</div></div>
-      <div class="chain-arrow">→</div>
-      <div class="chain-step" data-step="3"><div class="chain-icon">📊</div><div class="chain-label">Area Manager</div></div>
-      <div class="chain-arrow">→</div>
-      <div class="chain-step" data-step="4"><div class="chain-icon">🏛️</div><div class="chain-label">Ops Head</div></div>
-    </div>
-    <div class="supervision-features">
-      <div class="sf-item">🔎 Surprise Audits</div>
-      <div class="sf-item">📱 Digital Reporting</div>
-      <div class="sf-item">📓 Discipline Logs</div>
-      <div class="sf-item">💬 Structured Feedback</div>
-    </div>
-  </section>
-
-  <!-- STATS -->
-  <section id="stats">
-    <div class="stats-bg">
-      <div class="stats-inner">
-        <div class="stat-item"><div class="stat-num" data-target="150">0</div><div class="stat-label">Active Clients</div></div>
-        <div class="stat-divider"></div>
-        <div class="stat-item"><div class="stat-num" data-target="500">0</div><div class="stat-label">Personnel Deployed</div></div>
-        <div class="stat-divider"></div>
-        <div class="stat-item"><div class="stat-num" data-target="300">0</div><div class="stat-label">Sites Secured</div></div>
-        <div class="stat-divider"></div>
-        <div class="stat-item"><div class="stat-num" data-target="24">0</div><div class="stat-label">Hours On Duty</div></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SERVICES -->
-  <section id="services">
-    <div class="section-header">
-      <div class="sh-tag">WHAT WE OFFER</div>
-      <h2 class="sh-title">Our <span>Services</span></h2>
-    </div>
-    <div class="services-grid">
-      <div class="service-card"><div class="sc-top"><span class="sc-icon">🏠</span><span class="sc-num">01</span></div><h3>Residential & Gated Communities</h3><p>Round-the-clock gate management, visitor logging and resident safety.</p><div class="sc-bar"></div></div>
-      <div class="service-card"><div class="sc-top"><span class="sc-icon">🏢</span><span class="sc-num">02</span></div><h3>Corporate Offices & IT Parks</h3><p>Professional guards, access systems and disciplined floor patrolling.</p><div class="sc-bar"></div></div>
-      <div class="service-card"><div class="sc-top"><span class="sc-icon">🏭</span><span class="sc-num">03</span></div><h3>Industrial & Manufacturing</h3><p>Perimeter security, shift guards and safety protocol enforcement.</p><div class="sc-bar"></div></div>
-      <div class="service-card"><div class="sc-top"><span class="sc-icon">🎟</span><span class="sc-num">04</span></div><h3>Event & VIP Security</h3><p>Crowd management, VIP escorts and emergency response at events.</p><div class="sc-bar"></div></div>
-      <div class="service-card"><div class="sc-top"><span class="sc-icon">🧹</span><span class="sc-num">05</span></div><h3>Facility Management</h3><p>Housekeeping staffing and integrated facility operations support.</p><div class="sc-bar"></div></div>
-    </div>
-  </section>
-
-  <!-- TEAM -->
-  <section id="team">
-    <div class="section-header">
-      <div class="sh-tag">LEADERSHIP</div>
-      <h2 class="sh-title">The Team Behind <span>The Shield</span></h2>
-    </div>
-    <div class="team-grid">
-      <div class="team-card founder">
-        <div class="tc-img-wrap">
-          <img src="https://abhedya.net/img/founderimg.jpeg" alt="Ashutosh Gole" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-          <div class="tc-img-fallback">AG</div>
-        </div>
-        <div class="tc-info">
-          <div class="tc-role-tag">FOUNDER & CEO</div>
-          <h3 class="tc-name">Ashutosh Gole</h3>
-          <p class="tc-bio">Built Abhedya on a vision to transform private security with armed forces values — discipline, vigilance, and uncompromising accountability.</p>
-        </div>
-        <div class="tc-badge">🎖️ Founder</div>
-      </div>
-      <div class="team-card">
-        <div class="tc-img-wrap">
-          <img src="https://abhedya.net/img/ad1.jpeg" alt="Col. Nikhil Gajjar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-          <div class="tc-img-fallback">NG</div>
-        </div>
-        <div class="tc-info">
-          <div class="tc-role-tag">ADVISOR & MENTOR</div>
-          <h3 class="tc-name">Col. Nikhil Gajjar</h3>
-          <p class="tc-bio">Decorated armed forces veteran bringing decades of strategic security expertise and military operational discipline to Abhedya.</p>
-        </div>
-        <div class="tc-badge">⭐ Colonel</div>
-      </div>
-      <div class="team-card">
-        <div class="tc-img-wrap">
-          <div class="tc-img-fallback" style="display:flex">SS</div>
-        </div>
-        <div class="tc-info">
-          <div class="tc-role-tag">ADVISOR & MENTOR</div>
-          <h3 class="tc-name">Col. Surojit Sinha (Retd.)</h3>
-          <p class="tc-bio">Retired Colonel with extensive experience in security operations, personnel training and national-level threat assessment protocols.</p>
-        </div>
-        <div class="tc-badge">⭐ Colonel (Retd.)</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CONTACT -->
-  <section id="contact">
-    <div class="contact-inner">
+  <!-- CONTACT PANEL -->
+  <div id="contactPanel" class="full-panel hidden">
+    <button class="fp-close" onclick="closePanel('contactPanel')">✕</button>
+    <div class="fp-inner contact-layout">
       <div class="contact-left">
-        <div class="sh-tag">REACH OUT</div>
-        <h2 class="contact-title">Let's Secure <span>Your World</span></h2>
-        <p class="contact-sub">Tell us about your security needs. Our team will respond within 24 hours with a customized solution.</p>
-        <div class="contact-details">
-          <a href="https://wa.me/917666793286" class="contact-wa" target="_blank">
-            <span class="wa-icon">💬</span>
-            <div>
-              <div class="cd-label">WhatsApp Us</div>
-              <div class="cd-val">+91 76667 93286</div>
-            </div>
-          </a>
+        <div class="fp-tag">REACH OUT</div>
+        <h2 class="fp-title">Let's Secure <span>Your World</span></h2>
+        <p class="contact-sub">Tell us about your needs. We respond within 24 hours.</p>
+        <a href="https://wa.me/917666793286" class="wa-btn" target="_blank">
+          <span>💬</span>
+          <div><div class="wa-label">WhatsApp Us</div><div class="wa-num">+91 76667 93286</div></div>
+        </a>
+        <div class="stats-row">
+          <div class="sr-item"><div class="sr-num">150+</div><div class="sr-lbl">Clients</div></div>
+          <div class="sr-item"><div class="sr-num">500+</div><div class="sr-lbl">Personnel</div></div>
+          <div class="sr-item"><div class="sr-num">300+</div><div class="sr-lbl">Sites</div></div>
         </div>
       </div>
-      <form class="contact-form" id="contactForm">
-        <div class="form-group"><label>Full Name</label><input type="text" placeholder="Your name" required /></div>
-        <div class="form-group"><label>Phone Number</label><input type="tel" placeholder="+91 XXXXX XXXXX" required /></div>
-        <div class="form-group">
-          <label>Service Required</label>
-          <select>
-            <option value="">Select a service</option>
-            <option>Residential Security</option>
-            <option>Corporate / IT Park</option>
-            <option>Industrial Site</option>
-            <option>Event Security</option>
-            <option>Facility Management</option>
-          </select>
-        </div>
-        <div class="form-group"><label>Message</label><textarea placeholder="Tell us about your requirements..." rows="4"></textarea></div>
-        <button type="submit" class="btn-primary full-width">Send Request →</button>
-      </form>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer id="footer">
-    <div class="footer-inner">
-      <div class="footer-brand">
-        <div class="logo"><span class="logo-text">ABHEDYA</span><span class="logo-tag">SECURITY</span></div>
-        <p>Redefining security with discipline, integrity, and unwavering commitment.</p>
-      </div>
-      <div class="footer-links">
-        <div class="fl-col">
-          <div class="fl-head">Company</div>
-          <a href="#about">About Us</a>
-          <a href="#team">Our Team</a>
-        </div>
-        <div class="fl-col">
-          <div class="fl-head">Services</div>
-          <a href="#services">Residential</a>
-          <a href="#services">Corporate</a>
-          <a href="#services">Industrial</a>
-          <a href="#services">Events</a>
-        </div>
-        <div class="fl-col">
-          <div class="fl-head">Contact</div>
-          <a href="https://wa.me/917666793286" target="_blank">WhatsApp</a>
-          <a href="#contact">Get Quote</a>
-        </div>
+      <div class="contact-right">
+        <form id="contactForm">
+          <div class="fg"><label>Full Name *</label><input type="text" id="cf_name" placeholder="Your name" required/></div>
+          <div class="fg"><label>Phone Number *</label><input type="tel" id="cf_phone" placeholder="+91 XXXXX XXXXX" required/></div>
+          <div class="fg"><label>Email</label><input type="email" id="cf_email" placeholder="your@email.com"/></div>
+          <div class="fg">
+            <label>Service Required</label>
+            <select id="cf_service">
+              <option value="">Select a service</option>
+              <option>Residential Security</option>
+              <option>Corporate / IT Park</option>
+              <option>Industrial Site</option>
+              <option>Event Security</option>
+              <option>Facility Management</option>
+              <option>Mobile Patrol</option>
+            </select>
+          </div>
+          <div class="fg"><label>Message *</label><textarea id="cf_message" rows="4" placeholder="Tell us about your requirements…" required></textarea></div>
+          <button type="submit" class="send-btn" id="sendBtn">Send Request →</button>
+          <div id="formStatus" class="form-status"></div>
+        </form>
       </div>
     </div>
-    <div class="footer-bottom">
-      <span>© 2025 Abhedya Security Solutions. All rights reserved.</span>
-      <span class="footer-motto">IMPENETRABLE · UNWAVERING · ABHEDYA</span>
-    </div>
-  </footer>
+  </div>
 
   <script src="script.js"></script>
 </body>
