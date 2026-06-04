@@ -1,725 +1,1215 @@
 /* =====================================================
-   ABHEDYA SECURITY — Three.js World v4
-   + Mobile joystick   + Full light theme (buildings)
-   + Guard spotlight   + Fixed panels
+   ABHEDYA SECURITY SOLUTIONS — TACTICAL CORE V4.6
+   AESTHETIC: Dark But Playful Retro Arcade Game
+   FEATURES: Cute Waddling Robot Guard (with Mustache & Cap),
+             Vibrant Neon Wireframe Town, Proximity Bug Fix,
+             Radar Minimap Sweep, Pastel Candy Theme Transition.
    ===================================================== */
 
-// ── EMAILJS ───────────────────────────────────────────────────────────────────
+// ── EMAILJS INITIALIZATION ───────────────────────────────────────────────────
 const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';
 const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
 const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';
-try{if(typeof emailjs!=='undefined'&&EMAILJS_PUBLIC_KEY!=='YOUR_PUBLIC_KEY')emailjs.init(EMAILJS_PUBLIC_KEY);}catch(e){}
-
-// ── FORCE-DISMISS ─────────────────────────────────────────────────────────────
-const FORCE_DISMISS=setTimeout(startWorld,5000);
-const lsBar=document.getElementById('lsBar');
-const lsHint=document.getElementById('lsHint');
-const HINTS=['Building world…','Deploying guard…','Lighting up zones…','Ready to patrol!'];
-let loadPct=0;
-const loadTick=setInterval(()=>{
-  loadPct+=Math.random()*20+10;
-  if(loadPct>=100){loadPct=100;clearInterval(loadTick);startWorld();}
-  if(lsBar)lsBar.style.width=loadPct+'%';
-  if(lsHint)lsHint.textContent=HINTS[Math.min(3,Math.floor(loadPct/26))];
-},180);
-function startWorld(){
-  clearTimeout(FORCE_DISMISS);clearInterval(loadTick);
-  const ls=document.getElementById('loadingScreen');
-  if(!ls||ls.style.display==='none')return;
-  ls.classList.add('fade-out');
-  setTimeout(()=>{ls.style.display='none';},900);
+try {
+  if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+  }
+} catch (e) {
+  console.warn("EmailJS init failed: ", e);
 }
 
-// ── DETECT MOBILE ─────────────────────────────────────────────────────────────
-const isMobile=()=>window.innerWidth<=900||('ontouchstart' in window);
-
-try{
-
-// ── SCENE ────────────────────────────────────────────────────────────────────
-const canvas=document.getElementById('threeCanvas');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.setClearColor(0x07111f);
-
-const scene=new THREE.Scene();
-scene.fog=new THREE.Fog(0x07111f,40,120);
-
-const camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.1,200);
-camera.position.set(0,18,28);camera.lookAt(0,0,0);
-
-window.addEventListener('resize',()=>{
-  camera.aspect=window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-});
-
-// ── LIGHTS ───────────────────────────────────────────────────────────────────
-const ambient=new THREE.AmbientLight(0x223355,0.8);scene.add(ambient);
-const sun=new THREE.DirectionalLight(0xfff5e0,1.2);
-sun.position.set(20,40,20);sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);
-sun.shadow.camera.left=-50;sun.shadow.camera.right=50;
-sun.shadow.camera.top=50;sun.shadow.camera.bottom=-50;sun.shadow.camera.far=100;
-scene.add(sun);
-const moonLight=new THREE.PointLight(0x4466aa,0.6,60);
-moonLight.position.set(-20,25,-15);scene.add(moonLight);
-const guardLight=new THREE.PointLight(0xfff8e0,1.8,14);guardLight.castShadow=false;scene.add(guardLight);
-const guardFill=new THREE.PointLight(0xffeedd,0.6,22);scene.add(guardFill);
-
-// ── MATERIAL REGISTRY (for theme switching) ───────────────────────────────────
-// Every themeable mesh is registered here so we can recolor on theme change
-const themeMats={
-  ground:null, grid:null,
-  hqMain:[], hqAccent:[], hqWindow:[],
-  corporate:[], corporateGlass:[],
-  gate:[], booth:[],
-  fireZone:[], nightTower:[],
-  residential:[], residentialRoof:[],
-  industrial:[], industrialChimney:[],
-  trees:[], treeTops:[],
-  stars:null, moon:null, halo:null,
-};
-
-// ── HELPERS ──────────────────────────────────────────────────────────────────
-function box(w,h,d,col,x,y,z,group,tag){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:col}));
-  m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;
-  (group||scene).add(m);
-  if(tag&&themeMats[tag])themeMats[tag].push(m.material);
-  return m;
-}
-function cyl(rt,rb,h,s,col,x,y,z,tag){
-  const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,s),new THREE.MeshLambertMaterial({color:col}));
-  m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);
-  if(tag&&themeMats[tag])themeMats[tag].push(m.material);
-  return m;
-}
-
-// ── GROUND ───────────────────────────────────────────────────────────────────
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshLambertMaterial({color:0x0a1520}));
-ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
-themeMats.ground=ground.material;
-
-const grid=new THREE.GridHelper(120,30,0x1a3050,0x0d1f35);
-grid.position.y=0.02;scene.add(grid);
-themeMats.grid=grid.material;
-
-// ── STARS / MOON ─────────────────────────────────────────────────────────────
-const starArr=new Float32Array(800*3);
-for(let i=0;i<800;i++){starArr[i*3]=(Math.random()-.5)*300;starArr[i*3+1]=Math.random()*80+20;starArr[i*3+2]=(Math.random()-.5)*300;}
-const starGeo=new THREE.BufferGeometry();starGeo.setAttribute('position',new THREE.BufferAttribute(starArr,3));
-const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff,size:0.3,transparent:true,opacity:0.7}));
-scene.add(stars);themeMats.stars=stars.material;
-
-const moonMesh=new THREE.Mesh(new THREE.SphereGeometry(2.5,16,16),new THREE.MeshBasicMaterial({color:0xfff5c0}));
-moonMesh.position.set(-30,45,-40);scene.add(moonMesh);themeMats.moon=moonMesh.material;
-const haloMesh=new THREE.Mesh(new THREE.RingGeometry(3,5,32),new THREE.MeshBasicMaterial({color:0xfff5c0,transparent:true,opacity:0.08,side:THREE.DoubleSide}));
-haloMesh.position.copy(moonMesh.position);scene.add(haloMesh);themeMats.halo=haloMesh.material;
-
-// ── SUN (light theme) ─────────────────────────────────────────────────────────
-const sunSphere=new THREE.Mesh(new THREE.SphereGeometry(2,12,12),new THREE.MeshBasicMaterial({color:0xfffaaa}));
-sunSphere.position.set(30,48,-30);scene.add(sunSphere);sunSphere.visible=false;
-
-// ── HQ BUILDING ──────────────────────────────────────────────────────────────
-box(8,20,8,0x0c1e38,-18,10,-8,null,'hqMain');
-box(5,6,5,0x0e2244,-18,23,-8,null,'hqMain');
-box(5,12,6,0x0b1c32,-26,6,-8,null,'hqMain');
-for(let r=0;r<4;r++)for(let c=0;c<3;c++){
-  const w=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.8),new THREE.MeshBasicMaterial({color:0xD4AF37,opacity:0.7,transparent:true}));
-  w.position.set(-14+c*2,4+r*3.5,-3.9);scene.add(w);
-  themeMats.hqWindow.push(w.material);
-}
-// HQ sign
-const signC=document.createElement('canvas');signC.width=512;signC.height=128;
-const sx=signC.getContext('2d');sx.fillStyle='#D4AF37';sx.fillRect(0,0,512,128);
-sx.fillStyle='#0d1a2e';sx.font='bold 60px Arial';sx.textAlign='center';sx.fillText('ABHEDYA HQ',256,86);
-const signM=new THREE.Mesh(new THREE.PlaneGeometry(5,1.2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signC)}));
-signM.position.set(-18,21.5,-3.9);scene.add(signM);
-
-// ── GATE ─────────────────────────────────────────────────────────────────────
-box(0.5,5,0.5,0xD4AF37,-2.5,2.5,12,null,'gate');
-box(0.5,5,0.5,0xD4AF37,2.5,2.5,12,null,'gate');
-box(5.5,0.3,0.3,0xD4AF37,0,5.2,12,null,'gate');
-for(let i=0;i<4;i++)box(0.15,4,0.15,0xc8a020,-2+i*1.3,2,12,null,'gate');
-box(2,3,2,0x1a3050,5,1.5,12,null,'booth');
-box(2,0.15,2,0xD4AF37,5,3.1,12,null,'booth');
-
-// ── CORPORATE ────────────────────────────────────────────────────────────────
-box(10,16,8,0x0d2040,18,8,-5,null,'corporate');
-box(7,4,6,0x0f2550,18,18,-5,null,'corporate');
-for(let f=0;f<5;f++){
-  const fac=new THREE.Mesh(new THREE.PlaneGeometry(9,2.5),new THREE.MeshBasicMaterial({color:0x1a4060,opacity:0.4,transparent:true}));
-  fac.position.set(18,2.5+f*3,-0.9);scene.add(fac);
-  themeMats.corporateGlass.push(fac.material);
-}
-
-// ── FIRE ZONE ─────────────────────────────────────────────────────────────────
-cyl(0.5,0.6,1.5,8,0x333333,-18,0.75,16,'fireZone');
-const flameMeshes=[],flameColors=[0xff4400,0xff8800,0xffcc00];
-for(let fi=0;fi<3;fi++){
-  const fm=new THREE.Mesh(new THREE.ConeGeometry(0.3+fi*0.1,1.2+fi*0.3,6),new THREE.MeshBasicMaterial({color:flameColors[fi],transparent:true,opacity:0.85}));
-  fm.position.set(-18+(fi-1)*0.4,1.8+fi*0.2,16);scene.add(fm);flameMeshes.push(fm);
-}
-box(0.3,1,0.3,0xcc2200,-16,0.5,15.5,null,'fireZone');
-box(0.3,0.3,0.3,0x888888,-16,1.15,15.5,null,'fireZone');
-const fireGlow=new THREE.PointLight(0xff4400,1.5,10);fireGlow.position.set(-18,3,16);scene.add(fireGlow);
-
-// ── NIGHT TOWER ───────────────────────────────────────────────────────────────
-cyl(0.3,0.3,8,8,0x1a3050,18,4,16,'nightTower');
-box(3,0.2,3,0x1a3050,18,8.2,16,null,'nightTower');
-box(2.5,2,2.5,0x112030,18,9.2,16,null,'nightTower');
-const spot=new THREE.SpotLight(0xffffcc,2,30,Math.PI/8,0.5);
-spot.position.set(18,9.5,16);spot.target.position.set(18,0,10);scene.add(spot);scene.add(spot.target);
-
-// ── RESIDENTIAL ───────────────────────────────────────────────────────────────
-[[28,-12],[33,-8],[38,-14],[30,-18]].forEach(([hx,hz])=>{
-  box(3.5,3,3.5,0x0e2035,hx,1.5,hz,null,'residential');
-  const roof=new THREE.Mesh(new THREE.ConeGeometry(2.8,1.5,4),new THREE.MeshLambertMaterial({color:0x1a3a5f}));
-  roof.position.set(hx,3.75,hz);roof.rotation.y=Math.PI/4;roof.castShadow=true;scene.add(roof);
-  themeMats.residentialRoof.push(roof.material);
-});
-
-// ── INDUSTRIAL ────────────────────────────────────────────────────────────────
-box(12,8,10,0x0c1a28,-28,4,-20,null,'industrial');
-cyl(0.4,0.5,6,8,0x1a2a3a,-25,7,-18,'industrialChimney');
-cyl(0.4,0.5,8,8,0x1a2a3a,-22,8,-22,'industrialChimney');
-const smokeArr=new Float32Array(60*3);
-for(let s=0;s<60;s++){smokeArr[s*3]=-24+Math.random()*4;smokeArr[s*3+1]=12+Math.random()*8;smokeArr[s*3+2]=-20+Math.random()*4;}
-const smokeGeo=new THREE.BufferGeometry();smokeGeo.setAttribute('position',new THREE.BufferAttribute(smokeArr,3));
-const smoke=new THREE.Points(smokeGeo,new THREE.PointsMaterial({color:0x445566,size:0.5,transparent:true,opacity:0.35}));
-scene.add(smoke);
-
-// ── TREES ────────────────────────────────────────────────────────────────────
-const treeTrunkMats=[],treeTopMats=[];
-[[-5,-5],[5,-5],[-8,5],[8,5],[-3,20],[3,20],[10,-20],[-10,-20],[25,5],[-25,5]].forEach(([x,z])=>{
-  const trunk=cyl(0.15,0.2,2,6,0x4a3520,x,1,z,'trees');
-  treeTrunkMats.push(trunk.material);
-  const top=new THREE.Mesh(new THREE.SphereGeometry(0.8,8,6),new THREE.MeshLambertMaterial({color:0x0d2d18}));
-  top.position.set(x,2.5,z);top.castShadow=true;scene.add(top);
-  treeTopMats.push(top.material);
-  themeMats.treeTops.push(top.material);
-});
-
-// ── GUARD CHARACTER ──────────────────────────────────────────────────────────
-const guardGroup=new THREE.Group();scene.add(guardGroup);
-function gb(w,h,d,col,x,y,z){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:col}));
-  m.position.set(x,y,z);m.castShadow=true;guardGroup.add(m);return m;
-}
-const bootL=gb(0.35,0.4,0.6,0x0d1a2e,-0.15,0.2,0.05);
-const bootR=gb(0.35,0.4,0.6,0x0d1a2e,0.15,0.2,0.05);
-const legLP=new THREE.Group();legLP.position.set(-0.13,1.1,0);guardGroup.add(legLP);
-const legLM=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.8,0.28),new THREE.MeshLambertMaterial({color:0x1a2540}));legLM.position.set(0,-0.4,0);legLM.castShadow=true;legLP.add(legLM);
-const legRP=new THREE.Group();legRP.position.set(0.13,1.1,0);guardGroup.add(legRP);
-const legRM=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.8,0.28),new THREE.MeshLambertMaterial({color:0x1a2540}));legRM.position.set(0,-0.4,0);legRM.castShadow=true;legRP.add(legRM);
-const body=gb(0.72,0.95,0.42,0x1e3a5f,0,1.67,0);
-gb(0.74,0.1,0.44,0xD4AF37,0,1.27,0);
-const badge=new THREE.Mesh(new THREE.PlaneGeometry(0.18,0.18),new THREE.MeshBasicMaterial({color:0xD4AF37}));
-badge.position.set(0,1.78,0.22);guardGroup.add(badge);
-gb(0.22,0.22,0.44,0x1e3a5f,-0.47,2.08,0);gb(0.22,0.22,0.44,0x1e3a5f,0.47,2.08,0);
-const armLP=new THREE.Group();armLP.position.set(-0.47,2.05,0);guardGroup.add(armLP);
-const armLM=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.72,0.24),new THREE.MeshLambertMaterial({color:0x1e3a5f}));armLM.position.set(0,-0.36,0);armLM.castShadow=true;armLP.add(armLM);
-const glL=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,6),new THREE.MeshLambertMaterial({color:0x0d1a2e}));glL.position.set(0,-0.76,0);armLP.add(glL);
-const armRP=new THREE.Group();armRP.position.set(0.47,2.05,0);guardGroup.add(armRP);
-const armRM=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.72,0.24),new THREE.MeshLambertMaterial({color:0x1e3a5f}));armRM.position.set(0,-0.36,0);armRM.castShadow=true;armRP.add(armRM);
-const glR=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,6),new THREE.MeshLambertMaterial({color:0x0d1a2e}));glR.position.set(0,-0.76,0);armRP.add(glR);
-gb(0.2,0.28,0.2,0xc8a882,0,2.22,0);
-const headM=new THREE.Mesh(new THREE.SphereGeometry(0.28,14,12),new THREE.MeshLambertMaterial({color:0xc8a882}));headM.position.set(0,2.62,0);headM.castShadow=true;guardGroup.add(headM);
-const capT=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.30,0.15,8),new THREE.MeshLambertMaterial({color:0x1e3a5f}));capT.position.set(0,2.92,0);guardGroup.add(capT);
-const capB=new THREE.Mesh(new THREE.CylinderGeometry(0.38,0.38,0.05,16),new THREE.MeshLambertMaterial({color:0x1e3a5f}));capB.position.set(0,2.82,0.05);guardGroup.add(capB);
-const capBadge=new THREE.Mesh(new THREE.SphereGeometry(0.07,8,6),new THREE.MeshLambertMaterial({color:0xD4AF37,emissive:0xD4AF37,emissiveIntensity:0.4}));capBadge.position.set(0,2.88,0.29);guardGroup.add(capBadge);
-[[-0.1,2.66,0.26],[0.1,2.66,0.26]].forEach(([x,y,z])=>{
-  const e=new THREE.Mesh(new THREE.SphereGeometry(0.042,8,6),new THREE.MeshLambertMaterial({color:0x111122}));e.position.set(x,y,z);guardGroup.add(e);
-});
-const must=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.035,0.04),new THREE.MeshLambertMaterial({color:0x3a2010}));must.position.set(0,2.56,0.27);guardGroup.add(must);
-const walkieG=new THREE.Group();walkieG.position.set(0,-0.82,0);armLP.add(walkieG);
-walkieG.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.1,0.22,0.06),new THREE.MeshLambertMaterial({color:0xD4AF37})),{castShadow:true}));
-const wAnt=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.14,4),new THREE.MeshLambertMaterial({color:0x888888}));wAnt.position.set(0.04,0.18,0);walkieG.add(wAnt);walkieG.visible=false;
-const torchG=new THREE.Group();torchG.position.set(0,-0.82,0);armRP.add(torchG);
-torchG.add(Object.assign(new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.05,0.35,8),new THREE.MeshLambertMaterial({color:0x888888})),{castShadow:true}));
-const torchHead=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.06,0.1,8),new THREE.MeshLambertMaterial({color:0xaaaaaa}));torchHead.position.set(0,0.22,0);torchG.add(torchHead);
-const torchPL=new THREE.PointLight(0xffffaa,0,6);torchG.add(torchPL);torchG.visible=false;
-guardGroup.position.set(0,0,8);
-
-// ── ZONES ────────────────────────────────────────────────────────────────────
-const zones=[
-  {id:'gate',       label:'🚪 Gate Security',     pos:[-2,0,12],  r:5, icon:'🚪',tag:'ENTRANCE CONTROL',   title:'Securing the <em>Gate</em>',          text:'Our guards maintain <strong>strict access control</strong> at every entry — visitor logging, vehicle checks, zero-tolerance entry.',  list:['✓ Visitor management','✓ Vehicle checking','✓ 24/7 manned entry'],         night:false,walkie:true, torch:false,lc:0xffffaa,li:0.5},
-  {id:'hq',         label:'🏛 Abhedya HQ',         pos:[-18,0,-5], r:6, icon:'🛡️',tag:'OUR FOUNDATION',     title:'What is <em>Abhedya</em>?',           text:'Abhedya means <strong>Impenetrable</strong>. Founded on armed forces values — discipline, vigilance, zero compromise.',           list:['✓ Background verified','✓ Military supervisors','✓ 24×7 command'],          night:false,walkie:true, torch:false,lc:0xD4AF37,li:0.8},
-  {id:'corporate',  label:'🏢 Corporate Security', pos:[18,0,-5],  r:6, icon:'🏢',tag:'CORPORATE PATROL',   title:'Office & IT Park <em>Security</em>',  text:'Disciplined floor patrols, RFID access, and professional protocols for <strong>corporate campuses</strong> and IT parks.',         list:['✓ Access control','✓ CCTV coordination','✓ Visitor mgmt'],                  night:false,walkie:true, torch:false,lc:0x4466ff,li:0.4},
-  {id:'fire',       label:'🔥 Fire Training Zone', pos:[-18,0,16], r:5, icon:'🔥',tag:'EMERGENCY TRAINING', title:'Fire & Emergency <em>Response</em>',  text:'Every guard is <strong>fire safety certified</strong>. Evacuation, extinguisher use, and first response — drilled to instinct.',  list:['✓ Fire extinguisher cert.','✓ Evacuation drills','✓ First aid trained'],    night:true, walkie:false,torch:false,lc:0xff4400,li:1.2},
-  {id:'nightwatch', label:'🌙 Night Watch Tower',  pos:[18,0,16],  r:5, icon:'🌙',tag:'NIGHT SHIFT',        title:'On Guard <em>Through the Night</em>', text:'Night guards carry torches, radios and <strong>heightened vigilance</strong>. Threats don\'t sleep — neither do we.',             list:['✓ Night patrol rotations','✓ Intruder detection','✓ Digital logs'],         night:true, walkie:false,torch:true, lc:0x4488cc,li:0.6},
-  {id:'residential',label:'🏠 Residential',        pos:[32,0,-13], r:7, icon:'🏠',tag:'GATED COMMUNITIES',  title:'Protecting <em>Homes</em>',           text:'From gated societies to apartments — resident safety, vehicle entry and <strong>community watch patrols</strong>.',               list:['✓ Gate management','✓ Resident verification','✓ Emergency response'],       night:false,walkie:true, torch:false,lc:0x44cc88,li:0.5},
-  {id:'industrial', label:'🏭 Industrial Zone',    pos:[-28,0,-20],r:7, icon:'🏭',tag:'INDUSTRIAL SECURITY',title:'Factory & Plant <em>Protection</em>', text:'<strong>High-security perimeter control</strong> for plants — shift guards, asset tracking, safety enforcement.',                list:['✓ Perimeter surveillance','✓ Asset protection','✓ Shift deployment'],       night:false,walkie:true, torch:false,lc:0xff8800,li:0.6},
+// ── SYSTEM LOADING SEQUENCE ──────────────────────────────────────────────────
+const FORCE_DISMISS = setTimeout(startWorld, 5500);
+const lsBar = document.getElementById('lsBar');
+const lsHint = document.getElementById('lsHint');
+const HINTS = [
+  'BOOTING PLAYFUL SENTINEL OS… 🤖',
+  'ATTACHING SECURITY MUSTACHE… 🥸',
+  'CHARGING NEON POWER CORE… ⚡',
+  'READY TO ROAM! GO GO GO!'
 ];
-zones.forEach(z=>{
-  z.position=new THREE.Vector3(...z.pos);
-  const ring=new THREE.Mesh(new THREE.RingGeometry(z.r-0.2,z.r,32),new THREE.MeshBasicMaterial({color:z.lc,transparent:true,opacity:0.22,side:THREE.DoubleSide}));
-  ring.rotation.x=-Math.PI/2;ring.position.set(...z.pos).setY(0.05);scene.add(ring);z.ring=ring;
-  const zl=new THREE.PointLight(z.lc,z.li,15);zl.position.set(z.pos[0],6,z.pos[2]);scene.add(zl);z.zlight=zl;
-  const lc2=document.createElement('canvas');lc2.width=288;lc2.height=72;
-  const lx=lc2.getContext('2d');
-  lx.fillStyle='rgba(7,17,31,0.9)';lx.beginPath();lx.roundRect(0,0,288,72,10);lx.fill();
-  lx.strokeStyle='#D4AF37';lx.lineWidth=2;lx.beginPath();lx.roundRect(1,1,286,70,10);lx.stroke();
-  lx.fillStyle='#D4AF37';lx.font='bold 22px Arial';lx.textAlign='center';lx.fillText(z.label,144,45);
-  const sp=new THREE.Mesh(new THREE.PlaneGeometry(3.8,0.95),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(lc2),transparent:true,depthWrite:false}));
-  sp.position.set(z.pos[0],5.5,z.pos[2]);sp.scale.set(0,0,0);scene.add(sp);z.sprite=sp;
-});
-
-// ── THEME TOGGLE ─────────────────────────────────────────────────────────────
-let isLight=false;
-// DARK colours for all building mats
-const DARK={
-  ground:0x0a1520, gridA:0x1a3050, gridB:0x0d1f35,
-  hqMain:0x0c1e38, hqAccent:0x0e2244, hqSide:0x0b1c32,
-  corporate:0x0d2040, corporateTop:0x0f2550, corpGlass:0x1a4060,
-  booth:0x1a3050,
-  fire:0x333333,
-  tower:0x1a3050, towerTop:0x112030,
-  house:0x0e2035, roof:0x1a3a5f,
-  factory:0x0c1a28, chimney:0x1a2a3a,
-  trunk:0x4a3520, treetop:0x0d2d18,
-};
-// LIGHT colours
-const LIGHT={
-  ground:0x8aaa88, gridA:0x6a9060, gridB:0x7aaa78,
-  hqMain:0xd0e0f0, hqAccent:0xbdd0e8, hqSide:0xc5d5e8,
-  corporate:0xcce0f5, corporateTop:0xbdd4ee, corpGlass:0x7aaecc,
-  booth:0xc5d5e8,
-  fire:0x888888,
-  tower:0xb0c8e0, towerTop:0xa0b8d0,
-  house:0xf5dfc0, roof:0xe8803a,
-  factory:0xb8c8d8, chimney:0xa0b0c0,
-  trunk:0x8b6040, treetop:0x3a8a3a,
-};
-
-// Collect all material references once after scene is built
-// We walk the scene and tag materials by the mesh userData.tag set during creation
-// Simpler: we just keep explicit references
-let allBuildingMats=[];  // filled below after scene build
-
-function applyTheme(light){
-  isLight=light;
-  const C=light?LIGHT:DARK;
-  // Sky / fog
-  renderer.setClearColor(light?0x87CEEB:0x07111f);
-  scene.fog.color.set(light?0x87CEEB:0x07111f);
-  // Ground
-  ground.material.color.set(C.ground);
-  // Grid
-  if(grid.material.length){grid.material[0].color.set(C.gridA);grid.material[1].color.set(C.gridB);}
-  // Stars / moon / sun
-  stars.visible=!light; moonMesh.visible=!light; haloMesh.visible=!light;
-  sunSphere.visible=light;
-  // Lights
-  ambient.color.set(light?0xffffff:0x223355);
-  ambient.intensity=light?1.8:0.8;
-  sun.intensity=light?2.2:1.2;
-  moonLight.intensity=light?0:0.6;
-  // Apply to all registered mats
-  allBuildingMats.forEach(o=>{ if(o&&o.mat&&o.mat.color) o.mat.color.set(light?o.lightCol:o.darkCol); });
-  // Tree tops specially (they are separate)
-  treeTopMats.forEach(m=>m.color.set(light?LIGHT.treetop:DARK.treetop));
-  drawMiniMap();
-}
-
-// After building the scene collect all mats we need to recolor
-// We tag them during addBox by returning the mesh, then push to allBuildingMats
-// Simpler approach: re-traverse scene and match by current color
-// CLEANEST: just store them as we build — done below via explicit push
-
-// We build them into an explicit array here:
-allBuildingMats=[];
-// Helper to register
-function regMat(mat,darkCol,lightCol){allBuildingMats.push({mat,darkCol,lightCol});}
-
-// Walk all scene children after build and tag by color groups
-// (We do this after scene construction at bottom of try block)
-
-document.getElementById('themeToggle').addEventListener('click',()=>{
-  applyTheme(!isLight);
-  document.getElementById('themeToggle').textContent=isLight?'🌙':'☀️';
-});
-
-// ── CAMERA ORBIT ─────────────────────────────────────────────────────────────
-let orbitTheta=0,orbitPhi=0.55,orbitRadius=26;
-let isDrag=false,lastMX=0,lastMY=0;
-const camSmooth=new THREE.Vector3(0,0,0);
-
-// Single-touch = orbit on mobile (when NOT on joystick)
-// Two-touch = pinch to zoom
-let touchStart=null,pinchStart=null;
-
-canvas.addEventListener('mousedown',e=>{isDrag=true;lastMX=e.clientX;lastMY=e.clientY;});
-window.addEventListener('mouseup',()=>isDrag=false);
-window.addEventListener('mousemove',e=>{
-  if(!isDrag)return;
-  orbitTheta-=(e.clientX-lastMX)*0.005;
-  orbitPhi=Math.max(0.15,Math.min(1.4,orbitPhi-(e.clientY-lastMY)*0.005));
-  lastMX=e.clientX;lastMY=e.clientY;
-});
-canvas.addEventListener('wheel',e=>{orbitRadius=Math.max(10,Math.min(60,orbitRadius+e.deltaY*0.04));},{passive:true});
-
-// ── MOBILE TOUCH ORBIT + PINCH (on canvas, ignoring joystick) ────────────────
-function distBetweenTouches(t){return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);}
-
-canvas.addEventListener('touchstart',e=>{
-  if(e.touches.length===1){
-    touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
-    isDrag=true; lastMX=e.touches[0].clientX; lastMY=e.touches[0].clientY;
-  } else if(e.touches.length===2){
-    pinchStart=distBetweenTouches(e.touches);
-    isDrag=false;
+let loadPct = 0;
+const loadTick = setInterval(() => {
+  loadPct += Math.random() * 20 + 8;
+  if (loadPct >= 100) {
+    loadPct = 100;
+    clearInterval(loadTick);
+    startWorld();
   }
-},{passive:true});
+  if (lsBar) lsBar.style.width = loadPct + '%';
+  if (lsHint) lsHint.textContent = HINTS[Math.min(3, Math.floor(loadPct / 26))];
+}, 110);
 
-canvas.addEventListener('touchmove',e=>{
-  e.preventDefault();
-  if(e.touches.length===1&&isDrag){
-    orbitTheta-=(e.touches[0].clientX-lastMX)*0.006;
-    orbitPhi=Math.max(0.15,Math.min(1.4,orbitPhi-(e.touches[0].clientY-lastMY)*0.006));
-    lastMX=e.touches[0].clientX;lastMY=e.touches[0].clientY;
-  } else if(e.touches.length===2&&pinchStart!==null){
-    const d=distBetweenTouches(e.touches);
-    orbitRadius=Math.max(10,Math.min(60,orbitRadius-(d-pinchStart)*0.05));
-    pinchStart=d;
-  }
-},{passive:false});
-
-canvas.addEventListener('touchend',()=>{isDrag=false;pinchStart=null;},{passive:true});
-
-// ── KEYBOARD ─────────────────────────────────────────────────────────────────
-const keys={};
-window.addEventListener('keydown',e=>{keys[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();});
-window.addEventListener('keyup',  e=>keys[e.code]=false);
-
-// ── MOBILE JOYSTICK ───────────────────────────────────────────────────────────
-const joyWrap=document.getElementById('joystickWrap');
-const joyBase=document.getElementById('joystickBase');
-const joyKnob=document.getElementById('joystickKnob');
-const JOY_RADIUS=33; // max knob offset
-let joyActive=false;
-let joyVec={x:0,y:0}; // normalised -1..1
-let joyId=null; // touch identifier
-
-function joyStart(cx,cy){
-  joyActive=true;
-  joyMove(cx,cy);
-}
-function joyMove(cx,cy){
-  const rect=joyBase.getBoundingClientRect();
-  const ox=cx-(rect.left+rect.width/2);
-  const oy=cy-(rect.top+rect.height/2);
-  const mag=Math.min(JOY_RADIUS,Math.hypot(ox,oy));
-  const angle=Math.atan2(oy,ox);
-  const nx=Math.cos(angle)*mag;
-  const ny=Math.sin(angle)*mag;
-  joyKnob.style.transform=`translate(calc(-50% + ${nx}px), calc(-50% + ${ny}px))`;
-  joyVec={x:nx/JOY_RADIUS, y:ny/JOY_RADIUS};
-}
-function joyEnd(){
-  joyActive=false;
-  joyVec={x:0,y:0};
-  joyKnob.style.transform='translate(-50%,-50%)';
+function startWorld() {
+  clearTimeout(FORCE_DISMISS);
+  clearInterval(loadTick);
+  const ls = document.getElementById('loadingScreen');
+  if (!ls || ls.style.display === 'none') return;
+  ls.classList.add('fade-out');
+  setTimeout(() => { ls.style.display = 'none'; }, 900);
 }
 
-joyBase.addEventListener('touchstart',e=>{
-  e.stopPropagation();e.preventDefault();
-  joyId=e.changedTouches[0].identifier;
-  joyStart(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
-},{passive:false});
-joyBase.addEventListener('touchmove',e=>{
-  e.stopPropagation();e.preventDefault();
-  for(const t of e.changedTouches){
-    if(t.identifier===joyId){joyMove(t.clientX,t.clientY);break;}
-  }
-},{passive:false});
-joyBase.addEventListener('touchend',e=>{
-  e.stopPropagation();
-  for(const t of e.changedTouches){if(t.identifier===joyId){joyEnd();break;}}
-},{passive:false});
-// Mouse fallback for joystick (for desktop testing)
-joyBase.addEventListener('mousedown',e=>{e.stopPropagation();joyStart(e.clientX,e.clientY);});
-window.addEventListener('mousemove',e=>{if(joyActive)joyMove(e.clientX,e.clientY);});
-window.addEventListener('mouseup',()=>{if(joyActive)joyEnd();});
+// ── MOBILE DETECTION ──────────────────────────────────────────────────────────
+const isMobile = () => window.innerWidth <= 900 || ('ontouchstart' in window);
 
-// ── ZONE INFO PANEL ───────────────────────────────────────────────────────────
-let activeZone=null;
-const zoneLabel=document.getElementById('zoneLabel');
-const infoPanel=document.getElementById('infoPanel');
+try {
+  // ── THREE.JS ENGINE SETUP ───────────────────────────────────────────────────
+  const canvas = document.getElementById('threeCanvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setClearColor(0x0e0722);
 
-function openZone(z){
-  document.getElementById('ipIcon').textContent=z.icon;
-  document.getElementById('ipTag').textContent=z.tag;
-  document.getElementById('ipTitle').innerHTML=z.title;
-  document.getElementById('ipText').innerHTML=z.text;
-  document.getElementById('ipList').innerHTML=(z.list||[]).map(l=>`<li>${l}</li>`).join('');
-  infoPanel.classList.remove('hidden');
-  requestAnimationFrame(()=>infoPanel.classList.add('visible'));
-  zoneLabel.textContent=z.label;zoneLabel.classList.add('visible');
-  torchG.visible=z.torch;torchPL.intensity=z.torch?2:0;
-  walkieG.visible=z.walkie;
-  if(!isLight){ambient.intensity=z.night?0.3:0.8;moonLight.intensity=z.night?1.4:0.6;}
-  if(z.ring)z.ring.material.opacity=0.65;
-  if(z.sprite)z.sprite.scale.set(1,1,1);
-  showSpeech(getSpeech(z.id));
-}
-function closeZone(prev){
-  infoPanel.classList.remove('visible');
-  zoneLabel.classList.remove('visible');
-  setTimeout(()=>{if(!infoPanel.classList.contains('visible'))infoPanel.classList.add('hidden');},500);
-  torchG.visible=false;torchPL.intensity=0;walkieG.visible=false;
-  if(!isLight){ambient.intensity=0.8;moonLight.intensity=0.6;}
-  if(prev&&prev.ring)prev.ring.material.opacity=0.22;
-  if(prev&&prev.sprite)prev.sprite.scale.set(0,0,0);
-}
-document.getElementById('ipClose').addEventListener('click',()=>{closeZone(activeZone);activeZone=null;});
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x0e0722, 35, 115);
 
-// ── SPEECH ───────────────────────────────────────────────────────────────────
-let speechMesh=null,speechTm=null;
-function showSpeech(text){
-  if(speechMesh){guardGroup.remove(speechMesh);speechMesh=null;}
-  clearTimeout(speechTm);
-  const sc=document.createElement('canvas');sc.width=320;sc.height=80;
-  const cx=sc.getContext('2d');
-  cx.fillStyle='rgba(7,17,31,0.93)';cx.beginPath();cx.roundRect(0,0,320,80,10);cx.fill();
-  cx.strokeStyle='#D4AF37';cx.lineWidth=2;cx.beginPath();cx.roundRect(1,1,318,78,10);cx.stroke();
-  cx.fillStyle='#D4AF37';cx.font='bold 18px Arial';cx.textAlign='center';cx.fillText(text,160,47);
-  speechMesh=new THREE.Mesh(new THREE.PlaneGeometry(2.6,0.65),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc),transparent:true,depthWrite:false}));
-  speechMesh.position.set(0,4.1,0);guardGroup.add(speechMesh);
-  speechTm=setTimeout(()=>{if(speechMesh){guardGroup.remove(speechMesh);speechMesh=null;}},3500);
-}
-function getSpeech(id){return{gate:'Checking all access!',hq:'Abhedya — Impenetrable!',corporate:'Floor patrol active.',fire:'Fire training certified!',nightwatch:'Night watch on duty!',residential:'Community secured!',industrial:'Perimeter locked!'}[id]||'On patrol!';}
+  const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 18, 30);
+  camera.lookAt(0, 0, 0);
 
-// ── MINI MAP ─────────────────────────────────────────────────────────────────
-const mmC=document.getElementById('miniMapCanvas');
-const mmCtx=mmC?mmC.getContext('2d'):null;
-const MMS=130/120;
-function worldToMM(x,z){return[(x+60)*MMS,(z+60)*MMS];}
-function drawMiniMap(){
-  if(!mmCtx)return;
-  mmCtx.fillStyle=isLight?'rgba(180,210,180,0.95)':'rgba(7,17,31,0.95)';
-  mmCtx.fillRect(0,0,130,130);
-  zones.forEach(z=>{
-    const[mx,mz]=worldToMM(z.pos[0],z.pos[2]);
-    mmCtx.beginPath();mmCtx.arc(mx,mz,z.r*MMS,0,Math.PI*2);
-    mmCtx.strokeStyle='#D4AF37';mmCtx.lineWidth=1;mmCtx.globalAlpha=0.5;mmCtx.stroke();
-    mmCtx.fillStyle='rgba(212,175,55,0.12)';mmCtx.fill();mmCtx.globalAlpha=1;
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
   });
-  const[gx,gz]=worldToMM(guardGroup.position.x,guardGroup.position.z);
-  const grad=mmCtx.createRadialGradient(gx,gz,0,gx,gz,10);
-  grad.addColorStop(0,'rgba(212,175,55,0.7)');grad.addColorStop(1,'rgba(212,175,55,0)');
-  mmCtx.beginPath();mmCtx.arc(gx,gz,10,0,Math.PI*2);mmCtx.fillStyle=grad;mmCtx.fill();
-  mmCtx.beginPath();mmCtx.arc(gx,gz,4,0,Math.PI*2);mmCtx.fillStyle='#D4AF37';mmCtx.fill();
-  mmCtx.save();mmCtx.translate(gx,gz);mmCtx.rotate(guardGroup.rotation.y+Math.PI);
-  mmCtx.beginPath();mmCtx.moveTo(0,-6);mmCtx.lineTo(-3,2);mmCtx.lineTo(3,2);mmCtx.closePath();
-  mmCtx.fillStyle='#fff';mmCtx.fill();mmCtx.restore();
-}
 
-// ── PANELS ───────────────────────────────────────────────────────────────────
-let openPanelId=null;
-function openPanel(id){
-  if(openPanelId&&openPanelId!==id){
-    const prev=document.getElementById(openPanelId);
-    if(prev)prev.classList.remove('open');
-  }
-  openPanelId=id;
-  const p=document.getElementById(id);if(!p)return;
-  requestAnimationFrame(()=>requestAnimationFrame(()=>p.classList.add('open')));
-}
-function closePanel(id){
-  const p=document.getElementById(id);if(!p)return;
-  p.classList.remove('open');
-  if(openPanelId===id)openPanelId=null;
-  document.querySelectorAll('.bn-btn').forEach(b=>b.classList.toggle('active',b.dataset.section==='world'));
-}
-window.closePanel=closePanel;
-document.getElementById('closeServices').addEventListener('click',()=>closePanel('servicesPanel'));
-document.getElementById('closeTeam')    .addEventListener('click',()=>closePanel('teamPanel'));
-document.getElementById('closeContact') .addEventListener('click',()=>closePanel('contactPanel'));
+  // ── LIGHTS ──────────────────────────────────────────────────────────────────
+  const ambient = new THREE.AmbientLight(0x221544, 0.85); // Warm purple ambient
+  scene.add(ambient);
 
-document.querySelectorAll('.bn-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.bn-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const sec=btn.dataset.section;
-    if(sec==='world'){if(openPanelId){document.getElementById(openPanelId).classList.remove('open');openPanelId=null;}return;}
-    openPanel(sec+'Panel');
-  });
-});
+  const sun = new THREE.DirectionalLight(0xfff0fa, 1.2);
+  sun.position.set(20, 45, 15);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -40;
+  sun.shadow.camera.right = 40;
+  sun.shadow.camera.top = 40;
+  sun.shadow.camera.bottom = -40;
+  sun.shadow.camera.far = 110;
+  scene.add(sun);
 
-// ── CONTACT FORM ─────────────────────────────────────────────────────────────
-document.getElementById('contactForm').addEventListener('submit',async e=>{
-  e.preventDefault();
-  const btn=document.getElementById('sendBtn'),status=document.getElementById('formStatus');
-  const name=document.getElementById('cf_name').value.trim();
-  const phone=document.getElementById('cf_phone').value.trim();
-  const email=document.getElementById('cf_email').value.trim();
-  const service=document.getElementById('cf_service').value;
-  const message=document.getElementById('cf_message').value.trim();
-  if(!name||!phone||!message){status.textContent='⚠ Please fill in Name, Phone and Message.';status.className='form-status error';return;}
-  btn.disabled=true;btn.textContent='Sending…';status.textContent='';status.className='form-status';
-  const params={from_name:name,phone_number:phone,email_address:email||'Not provided',service_required:service||'Not specified',message,to_name:'Abhedya Security'};
-  try{
-    if(typeof emailjs!=='undefined'&&EMAILJS_SERVICE_ID!=='YOUR_SERVICE_ID'){
-      await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,params);
-      status.textContent='✓ Message sent! We will contact you within 24 hours.';
-      status.className='form-status success';e.target.reset();
-    } else {
-      const msg=encodeURIComponent(`Hello Abhedya Security!\n\nName: ${name}\nPhone: ${phone}\nEmail: ${email||'N/A'}\nService: ${service||'N/A'}\nMessage: ${message}`);
-      window.open(`https://wa.me/917666793286?text=${msg}`,'_blank');
-      status.textContent='✓ Redirected to WhatsApp with your message!';
-      status.className='form-status success';e.target.reset();
-    }
-  }catch(err){
-    status.textContent='✗ Could not send. WhatsApp us: +91 76667 93286';
-    status.className='form-status error';
-  }finally{btn.disabled=false;btn.textContent='Send Request →';}
-});
+  // Soft glowing pointlight to lit up the center play area
+  const mainCenterGlow = new THREE.PointLight(0xff2e93, 1.2, 45);
+  mainCenterGlow.position.set(0, 15, 0);
+  scene.add(mainCenterGlow);
 
-// ── NOW register all building materials for theme switching ───────────────────
-// We traverse the scene and match by initial color values
-scene.traverse(obj=>{
-  if(!obj.isMesh||!obj.material||!obj.material.color)return;
-  const c=obj.material.color.getHex();
-  // Map dark hex → light hex
-  const map={
-    [DARK.hqMain]:LIGHT.hqMain,[DARK.hqAccent]:LIGHT.hqAccent,[DARK.hqSide]:LIGHT.hqSide,
-    [DARK.corporate]:LIGHT.corporate,[DARK.corporateTop]:LIGHT.corporateTop,
-    [DARK.corpGlass]:LIGHT.corpGlass,
-    [DARK.booth]:LIGHT.booth,[DARK.fire]:LIGHT.fire,
-    [DARK.tower]:LIGHT.tower,[DARK.towerTop]:LIGHT.towerTop,
-    [DARK.house]:LIGHT.house,[DARK.roof]:LIGHT.roof,
-    [DARK.factory]:LIGHT.factory,[DARK.chimney]:LIGHT.chimney,
-    [DARK.trunk]:LIGHT.trunk,[DARK.treetop]:LIGHT.treetop,
+  // ── MATERIAL THEME RECOLOUR REGISTRY ───────────────────────────────────────
+  const themeMats = {
+    ground: null,
+    grid: null,
+    buildings: [],
+    wires: [],
+    glows: [],
+    starPoints: null,
+    sunMesh: null
   };
-  if(map[c]!==undefined)regMat(obj.material,c,map[c]);
-});
-// Grid needs special handling (its material is an array)
-// Grid helper uses LineSegments with array of materials — handle in applyTheme already
 
-// ── ANIMATION LOOP ────────────────────────────────────────────────────────────
-const clock=new THREE.Clock();
-let walkCycle=0,frameN=0;
+  const treeTopMats = [];
 
-function animate(){
-  requestAnimationFrame(animate);
-  const delta=Math.min(clock.getDelta(),0.05);
-  const elapsed=clock.getElapsedTime();
-  frameN++;
-
-  // Movement — keyboard OR joystick
-  let moving=false;
-  const dir=new THREE.Vector3();
-
-  if(keys['ArrowUp']   ||keys['KeyW']){dir.z-=1;moving=true;}
-  if(keys['ArrowDown'] ||keys['KeyS']){dir.z+=1;moving=true;}
-  if(keys['ArrowLeft'] ||keys['KeyA']){dir.x-=1;moving=true;}
-  if(keys['ArrowRight']||keys['KeyD']){dir.x+=1;moving=true;}
-
-  // Joystick overrides / adds
-  if(joyActive&&(Math.abs(joyVec.x)>0.08||Math.abs(joyVec.y)>0.08)){
-    dir.x+=joyVec.x;
-    dir.z+=joyVec.y; // joystick Y → world Z
-    moving=true;
+  function regBuilding(mat, darkCol, lightCol) {
+    themeMats.buildings.push({ mat, darkCol, lightCol });
+  }
+  function regWire(mat, darkCol, lightCol) {
+    themeMats.wires.push({ mat, darkCol, lightCol });
+  }
+  function regGlow(light, darkInt, lightInt, darkCol, lightCol) {
+    themeMats.glows.push({ light, darkInt, lightInt, darkCol, lightCol });
   }
 
-  if(moving){
-    dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),orbitTheta);
-    const spd=5.5;
-    guardGroup.position.x=Math.max(-55,Math.min(55,guardGroup.position.x+dir.x*spd*delta));
-    guardGroup.position.z=Math.max(-55,Math.min(55,guardGroup.position.z+dir.z*spd*delta));
-    guardGroup.rotation.y=Math.atan2(dir.x,dir.z);
-    walkCycle+=delta*9;
+  // ── PLAYFUL NEON CYBER BUILD HELPERS ────────────────────────────────────────
+  function createPlayfulBuilding(w, h, d, x, y, z, baseColor, wireColor, tag) {
+    const geom = new THREE.BoxGeometry(w, h, d);
+    const mat = new THREE.MeshPhongMaterial({
+      color: baseColor,
+      transparent: true,
+      opacity: 0.82,
+      shininess: 65,
+      specular: 0xff2e93
+    });
+    const m = new THREE.Mesh(geom, mat);
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    scene.add(m);
+
+    // Vibrant Neon Edge Wireframe
+    const edges = new THREE.EdgesGeometry(geom);
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: wireColor,
+      transparent: true,
+      opacity: 0.75
+    });
+    const lines = new THREE.LineSegments(edges, edgeMat);
+    m.add(lines);
+
+    const lightColorMap = {
+      0x1c0f3a: 0xe3daf5, // HQ Base
+      0x27164f: 0xd8c8f0, // HQ Cap
+      0x130b26: 0xc8bde0, // HQ Annex
+      0x161c47: 0xd8dfeb, // Corporate
+      0x202b66: 0xc8cfeb, // Corporate Top
+      0x1a1230: 0xd5cfe0, // Gate Booth
+      0x12243d: 0xd2dfeb, // Residential Base
+      0x1c102c: 0xecdcf0, // Industrial
+    };
+    const targetL = lightColorMap[baseColor] || 0xffffff;
+
+    regBuilding(mat, baseColor, targetL);
+    regWire(edgeMat, wireColor, 0x007bb0); // Swaps to cobalt blue in light mode
+
+    return m;
   }
 
-  // Walk/idle anim
-  if(moving){
-    const sw=Math.sin(walkCycle)*0.55;
-    legLP.rotation.x=sw;legRP.rotation.x=-sw;
-    armLP.rotation.x=-sw*0.7;armRP.rotation.x=sw*0.7;
-    bootL.position.z=Math.sin(walkCycle)*0.1;bootR.position.z=-Math.sin(walkCycle)*0.1;
-    body.position.y=1.67+Math.abs(Math.sin(walkCycle*2))*0.02;
-  } else {
-    const br=Math.sin(elapsed*1.4)*0.012;
-    body.position.y=1.67+br;
-    legLP.rotation.x=0;legRP.rotation.x=0;
-    armLP.rotation.x=0;armRP.rotation.x=0;
-    bootL.position.z=0;bootR.position.z=0;
-    armLP.rotation.z=0.05+Math.sin(elapsed*0.8)*0.02;
-    armRP.rotation.z=-0.05-Math.sin(elapsed*0.8)*0.02;
+  function createPlayfulCyl(rt, rb, h, s, baseColor, wireColor, x, y, z) {
+    const geom = new THREE.CylinderGeometry(rt, rb, h, s);
+    const mat = new THREE.MeshPhongMaterial({
+      color: baseColor,
+      transparent: true,
+      opacity: 0.85,
+      shininess: 50
+    });
+    const m = new THREE.Mesh(geom, mat);
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    scene.add(m);
+
+    const edges = new THREE.EdgesGeometry(geom);
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: wireColor,
+      transparent: true,
+      opacity: 0.7
+    });
+    const lines = new THREE.LineSegments(edges, edgeMat);
+    m.add(lines);
+
+    const lightColorMap = {
+      0x1e153d: 0xdbd5eb, // Tower base
+      0x150e2b: 0xcbc4de, // Tower cap
+      0x2c2c2c: 0x9c9c9c, // Fire pot
+      0x1c1e30: 0xadb0c8, // Chimney
+    };
+    const targetL = lightColorMap[baseColor] || 0xffffff;
+
+    regBuilding(mat, baseColor, targetL);
+    regWire(edgeMat, wireColor, 0x007bb0);
+
+    return m;
   }
 
-  // Guard follow lights
-  guardLight.position.set(guardGroup.position.x,guardGroup.position.y+3,guardGroup.position.z);
-  guardFill .position.set(guardGroup.position.x,guardGroup.position.y+5,guardGroup.position.z);
-  const inNight=activeZone&&activeZone.night;
-  if(moving){
-    guardLight.intensity=1.6+Math.abs(Math.sin(walkCycle*2))*0.6;
-  } else {
-    guardLight.intensity=1.5+Math.sin(elapsed*1.2)*0.3;
+  // ── GROUND PLANE & ARCADE INTERSECTION GRIDS ───────────────────────────────
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x110a26 });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  themeMats.ground = groundMat;
+
+  // Concentric Neon Circular Radar Rings
+  const circularGrids = [];
+  for (let r = 12; r <= 72; r += 12) {
+    const ringGeom = new THREE.RingGeometry(r - 0.08, r + 0.08, 64);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.2,
+      side: THREE.DoubleSide
+    });
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.02;
+    scene.add(ring);
+    circularGrids.push(ring);
+    regWire(ringMat, 0x00f0ff, 0x007bb0);
   }
-  guardLight.distance=inNight?20:14;
-  guardFill.intensity=inNight?0.9:0.5;
-  if(isLight){guardLight.intensity*=0.35;guardFill.intensity*=0.25;}
 
-  // Speech & zone labels face camera
-  if(speechMesh)speechMesh.rotation.y=-guardGroup.rotation.y+orbitTheta;
-  zones.forEach(z=>{if(z.sprite&&z.sprite.scale.x>0)z.sprite.rotation.y=orbitTheta;});
+  // Neon Grid Helper
+  const grid = new THREE.GridHelper(150, 30, 0xff2e93, 0x221347);
+  grid.position.y = 0.01;
+  scene.add(grid);
+  if (grid.material.length) {
+    regWire(grid.material[0], 0xff2e93, 0x007bb0);
+    regWire(grid.material[1], 0x221347, 0xccaaff);
+  }
 
-  // Flames
-  flameMeshes.forEach((fm,i)=>{
-    fm.scale.y=0.8+Math.sin(elapsed*9+i*1.7)*0.25;
-    fm.position.y=1.8+i*0.2+Math.sin(elapsed*11+i)*0.06;
-    fm.rotation.y+=0.06;
+  // ── FLOATING STAR DUST particles ────────────────────────────────────────────
+  const starArr = new Float32Array(500 * 3);
+  for (let i = 0; i < 500; i++) {
+    starArr[i * 3] = (Math.random() - .5) * 250;
+    starArr[i * 3 + 1] = Math.random() * 55 + 20;
+    starArr[i * 3 + 2] = (Math.random() - .5) * 250;
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starArr, 3));
+  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xff2e93, size: 0.5, transparent: true, opacity: 0.85 }));
+  scene.add(stars);
+  themeMats.starPoints = stars;
+
+  // Floating Cyber Sun (Light Mode only)
+  const sunSphere = new THREE.Mesh(new THREE.SphereGeometry(2.5, 16, 16), new THREE.MeshBasicMaterial({ color: 0xff8c00, transparent: true, opacity: 0 }));
+  sunSphere.position.set(30, 48, -30);
+  scene.add(sunSphere);
+  themeMats.sunMesh = sunSphere;
+
+  // ── CREATE PLAYFUL TOY TOWN BUILDINGS ───────────────────────────────────────
+  // HQ Complex (Neon Cyan Wireframes)
+  createPlayfulBuilding(9, 20, 9, -18, 10, -8, 0x1c0f3a, 0x00f0ff);
+  createPlayfulBuilding(5.5, 6, 5.5, -18, 23, -8, 0x27164f, 0x00f0ff);
+  createPlayfulBuilding(5.5, 12, 6.5, -26, 6, -8, 0x130b26, 0x00f0ff);
+  
+  // Neon-lit Windows
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 3; c++) {
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), new THREE.MeshBasicMaterial({ color: 0x00f0ff, opacity: 0.85, transparent: true }));
+      w.position.set(-14 + c * 2, 4.5 + r * 3.8, -3.4);
+      scene.add(w);
+      regBuilding(w.material, 0x00f0ff, 0x005bc0);
+    }
+  }
+
+  // Mustache HQ Holographic Banner
+  const signC = document.createElement('canvas');
+  signC.width = 512;
+  signC.height = 128;
+  const sx = signC.getContext('2d');
+  sx.fillStyle = 'rgba(255, 46, 147, 0.1)';
+  sx.fillRect(0, 0, 512, 128);
+  sx.strokeStyle = '#ff2e93';
+  sx.lineWidth = 4;
+  sx.strokeRect(4, 4, 504, 120);
+  sx.fillStyle = '#00f0ff';
+  sx.font = 'bold 50px Courier';
+  sx.textAlign = 'center';
+  sx.fillText('[ ABHEDYA BOT HQ ]', 256, 80);
+  
+  const signM = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 1.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(signC), transparent: true, side: THREE.DoubleSide }));
+  signM.position.set(-18, 21.5, -3.4);
+  scene.add(signM);
+
+  // Security Gate Booth (Cyan Wireframe)
+  createPlayfulBuilding(0.6, 5.5, 0.6, -2.5, 2.75, 12, 0x1a1230, 0x00f0ff);
+  createPlayfulBuilding(0.6, 5.5, 0.6, 2.5, 2.75, 12, 0x1a1230, 0x00f0ff);
+  createPlayfulBuilding(5.6, 0.3, 0.3, 0, 5.5, 12, 0x1a1230, 0x00f0ff);
+  createPlayfulBuilding(2.2, 3.2, 2.2, 5, 1.6, 12, 0x1a1230, 0x00f0ff);
+  createPlayfulBuilding(2.4, 0.15, 2.4, 5, 3.25, 12, 0x1a1230, 0x00f0ff);
+
+  // Corporate Plaza (Pink Wireframes)
+  createPlayfulBuilding(11, 17, 9, 18, 8.5, -5, 0x161c47, 0xff2e93);
+  createPlayfulBuilding(7.5, 4.5, 6.5, 18, 19.25, -5, 0x202b66, 0xff2e93);
+  
+  for (let f = 0; f < 5; f++) {
+    const fac = new THREE.Mesh(new THREE.PlaneGeometry(10, 2.7), new THREE.MeshBasicMaterial({ color: 0xff2e93, opacity: 0.25, transparent: true }));
+    fac.position.set(18, 3.0 + f * 3.3, -0.4);
+    scene.add(fac);
+    regBuilding(fac.material, 0xff2e93, 0xcc0066);
+  }
+
+  // Disaster Countermeasures Fire Zone (Red/Orange Wireframes)
+  createPlayfulCyl(0.6, 0.7, 1.6, 8, 0x2c2c2c, 0xff5500, -18, 0.8, 16);
+  // Holographic cartoon flames
+  const flameMeshes = [];
+  const flameColors = [0xff2e93, 0xffd200, 0x00f0ff];
+  for (let fi = 0; fi < 3; fi++) {
+    const fm = new THREE.Mesh(
+      new THREE.ConeGeometry(0.35 + fi * 0.12, 1.3 + fi * 0.3, 6),
+      new THREE.MeshBasicMaterial({ color: flameColors[fi], transparent: true, opacity: 0.85 })
+    );
+    fm.position.set(-18 + (fi - 1) * 0.4, 1.9 + fi * 0.2, 16);
+    scene.add(fm);
+    flameMeshes.push(fm);
+  }
+  const fireGlow = new THREE.PointLight(0xff5500, 1.8, 14);
+  fireGlow.position.set(-18, 3.5, 16);
+  scene.add(fireGlow);
+  regGlow(fireGlow, 1.8, 0.5, 0xff5500, 0xff3300);
+
+  // Overwatch Observation Tower (Pink Wireframe)
+  createPlayfulCyl(0.3, 0.3, 8.5, 8, 0x1e153d, 0xff2e93, 18, 4.25, 16);
+  createPlayfulBox(3.2, 0.25, 3.2, 18, 8.6, 16, 0x1e153d);
+  createPlayfulBox(2.6, 2.2, 2.6, 18, 9.7, 16, 0x150e2b);
+
+  function createPlayfulBox(w, h, d, x, y, z, color) {
+    return createPlayfulBuilding(w, h, d, x, y, z, color, 0xff2e93);
+  }
+
+  // SpotLight Search beam (yellow cone)
+  const spot = new THREE.SpotLight(0xffea00, 2.5, 35, Math.PI / 8, 0.5, 0.6);
+  spot.position.set(18, 10, 16);
+  spot.target.position.set(15, 0, 8);
+  scene.add(spot);
+  scene.add(spot.target);
+  regGlow(spot, 2.5, 0.2, 0xffea00, 0xffbb00);
+
+  // Residential Neighborhood (Yellow/Orange Wireframes)
+  const resCoords = [[28, -12], [34, -7], [39, -13], [30, -19]];
+  resCoords.forEach(([hx, hz]) => {
+    createPlayfulBuilding(3.6, 3.2, 3.6, hx, 1.6, hz, 0x12243d, 0xffea00);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(2.9, 1.6, 4), new THREE.MeshLambertMaterial({ color: 0x1a2e4c }));
+    roof.position.set(hx, 4.0, hz);
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    scene.add(roof);
+    regBuilding(roof.material, 0x1a2e4c, 0xff7b25);
   });
-  fireGlow.intensity=1.2+Math.sin(elapsed*7)*0.5;
 
-  // Smoke
-  const sa=smoke.geometry.attributes.position;
-  for(let s=0;s<60;s++){
-    sa.array[s*3+1]+=0.025;
-    if(sa.array[s*3+1]>22)sa.array[s*3+1]=12;
-    sa.array[s*3]+=Math.sin(elapsed+s)*0.003;
+  // Heavy Industrial Sector (Orange Wireframes)
+  createPlayfulBuilding(13, 8.5, 10.5, -28, 4.25, -20, 0x1c102c, 0xff8c00);
+  createPlayfulCyl(0.4, 0.5, 6.5, 8, 0x1c1e30, 0xff8c00, -25, 7.5, -18);
+  createPlayfulCyl(0.4, 0.5, 8.5, 8, 0x1c1e30, 0xff8c00, -21.5, 8.5, -21.5);
+  
+  // Pink Cyber Smoke
+  const smokeArr = new Float32Array(50 * 3);
+  for (let s = 0; s < 50; s++) {
+    smokeArr[s * 3] = -24 + Math.random() * 4;
+    smokeArr[s * 3 + 1] = 12 + Math.random() * 9;
+    smokeArr[s * 3 + 2] = -20 + Math.random() * 4;
   }
-  sa.needsUpdate=true;
+  const smokeGeo = new THREE.BufferGeometry();
+  smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokeArr, 3));
+  const smoke = new THREE.Points(smokeGeo, new THREE.PointsMaterial({ color: 0xff2e93, size: 0.7, transparent: true, opacity: 0.55 }));
+  scene.add(smoke);
 
-  // Rings
-  zones.forEach((z,i)=>{
-    if(z.ring){z.ring.material.opacity=(activeZone===z?0.62:0.18)+Math.sin(elapsed*2+i)*0.08;z.ring.rotation.z+=0.004;}
-    if(z.zlight)z.zlight.intensity=z.li*(0.85+Math.sin(elapsed*3+i)*0.15);
+  // Playful Lego Trees
+  const treeCoords = [
+    [-6, -6], [6, -6], [-9, 6], [9, 6], [-3, 22], [3, 22],
+    [10, -22], [-10, -22], [26, 6], [-26, 6]
+  ];
+  treeCoords.forEach(([tx, tz]) => {
+    createPlayfulCyl(0.12, 0.18, 2.2, 6, 0x1e123a, 0x00f0ff, tx, 1.1, tz);
+    
+    // Colorful foliage spheres
+    const topGeom = new THREE.DodecahedronGeometry(0.95, 0);
+    const topMat = new THREE.MeshPhongMaterial({
+      color: 0x0d3c26,
+      transparent: true,
+      opacity: 0.78,
+      shininess: 30
+    });
+    const top = new THREE.Mesh(topGeom, topMat);
+    top.position.set(tx, 2.8, tz);
+    top.castShadow = true;
+    scene.add(top);
+    treeTopMats.push(topMat);
+    
+    const edges = new THREE.EdgesGeometry(topGeom);
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0xff2e93, transparent: true, opacity: 0.55 });
+    const lines = new THREE.LineSegments(edges, edgeMat);
+    top.add(lines);
+
+    regBuilding(topMat, 0x0d3c26, 0x3ac58a);
+    regWire(edgeMat, 0xff2e93, 0x007bb0);
   });
-  spot.intensity=1.8+Math.sin(elapsed*0.5)*0.3;
-  moonMesh.rotation.y+=0.0008;haloMesh.rotation.z+=0.001;
-  if(!isLight)stars.material.opacity=0.55+Math.sin(elapsed*0.4)*0.15;
 
-  // Zone detection
-  let nearest=null,nd=Infinity;
-  zones.forEach(z=>{const d=guardGroup.position.distanceTo(z.position);if(d<z.r&&d<nd){nd=d;nearest=z;}});
-  if(nearest!==activeZone){
-    if(nearest){closeZone(activeZone);activeZone=nearest;openZone(nearest);}
-    else{closeZone(activeZone);activeZone=null;}
+  // ── THEME TRANSITION CONTROLLER ──
+  let isLight = false;
+
+  function applyTheme(lightMode) {
+    isLight = lightMode;
+
+    const skyCol = lightMode ? 0xe4def4 : 0x0e0722; // Pastel lavender vs Dark Indigo
+    renderer.setClearColor(skyCol);
+    scene.fog.color.setHex(skyCol);
+
+    ambient.color.setHex(lightMode ? 0xffffff : 0x221544);
+    ambient.intensity = lightMode ? 1.6 : 0.85;
+    sun.color.setHex(lightMode ? 0xffffff : 0xfff0fa);
+    sun.intensity = lightMode ? 2.0 : 1.2;
+
+    stars.visible = !lightMode;
+    themeMats.sunMesh.material.opacity = lightMode ? 0.9 : 0.0;
+    
+    ground.material.color.setHex(lightMode ? 0xccbfe8 : 0x110a26);
+
+    themeMats.buildings.forEach(item => {
+      item.mat.color.setHex(lightMode ? item.lightCol : item.darkCol);
+    });
+
+    themeMats.wires.forEach(item => {
+      item.mat.color.setHex(lightMode ? item.lightCol : item.darkCol);
+    });
+
+    themeMats.glows.forEach(item => {
+      item.light.intensity = lightMode ? item.lightInt : item.darkInt;
+      if (item.light.color) {
+        item.light.color.setHex(lightMode ? item.lightCol : item.darkCol);
+      }
+    });
+
+    drawMiniMap();
   }
 
-  // Camera follow
-  camSmooth.lerp(guardGroup.position,0.05);
-  camera.position.set(
-    camSmooth.x+orbitRadius*Math.sin(orbitTheta)*Math.cos(orbitPhi),
-    camSmooth.y+orbitRadius*Math.sin(orbitPhi),
-    camSmooth.z+orbitRadius*Math.cos(orbitTheta)*Math.cos(orbitPhi)
-  );
-  camera.lookAt(camSmooth.x,camSmooth.y+1.5,camSmooth.z);
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    applyTheme(!isLight);
+    document.getElementById('themeToggle').textContent = isLight ? '🌙' : '☀️';
+    document.body.classList.toggle('light', isLight);
+  });
 
-  if(frameN%3===0)drawMiniMap();
-  renderer.render(scene,camera);
-}
+  // ── CUTE SECURITY GUARD ROBOT (WITH MUSTACHE & CAP) ────────────────────────
+  const guardGroup = new THREE.Group();
+  scene.add(guardGroup);
 
-setTimeout(()=>showSpeech(isMobile()?'Use joystick to move!':'Arrow keys to move!'),1200);
-animate();
+  function makePart(w, h, d, col, x, y, z, parent) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshPhongMaterial({
+      color: col,
+      shininess: 60,
+      specular: 0x00f0ff
+    }));
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    (parent || guardGroup).add(m);
+    return m;
+  }
 
-}catch(err){
-  console.error('Scene error:',err);
+  // WADDLE SUB-GROUPS for animation waddling
+  const bodyGroup = new THREE.Group();
+  bodyGroup.position.set(0, 1.0, 0); // elevated base
+  guardGroup.add(bodyGroup);
+
+  // Torso (cute boxy blue security coat)
+  const bodyMesh = makePart(0.8, 0.9, 0.5, 0x162c6b, 0, 0.35, 0, bodyGroup);
+  // Gold badge on chest
+  const badge = makePart(0.18, 0.18, 0.05, 0xffd200, 0, 0.45, 0.26, bodyGroup);
+  // Gold belt buckle
+  const belt = makePart(0.82, 0.1, 0.52, 0x111111, 0, 0.05, 0, bodyGroup);
+  const buckle = makePart(0.2, 0.14, 0.54, 0xffd200, 0, 0.05, 0.01, bodyGroup);
+
+  // Dome Robot Head
+  const headGroup = new THREE.Group();
+  headGroup.position.set(0, 0.85, 0);
+  bodyGroup.add(headGroup);
+
+  // Neck
+  makePart(0.2, 0.12, 0.2, 0x777777, 0, -0.02, 0, headGroup);
+  // Round Head box/cylinder
+  const headMesh = makePart(0.68, 0.55, 0.55, 0xd0ccd6, 0, 0.28, 0, headGroup);
+
+  // EYES: Big glowing yellow robot eyes (very playful!)
+  const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffd200 }));
+  eyeL.position.set(-0.16, 0.32, 0.27);
+  headGroup.add(eyeL);
+
+  const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffd200 }));
+  eyeR.position.set(0.16, 0.32, 0.27);
+  headGroup.add(eyeR);
+
+  // MUSTACHE (Hilarious playful element)
+  const mustache = makePart(0.32, 0.08, 0.06, 0x472d17, 0, 0.18, 0.28, headGroup);
+
+  // Security Captain Hat (Police Cap)
+  const capBase = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.08, 16), new THREE.MeshPhongMaterial({ color: 0x162c6b }));
+  capBase.position.set(0, 0.58, 0.02);
+  capBase.rotation.x = 0.05; // Tilted slightly forward
+  headGroup.add(capBase);
+
+  const capBrim = makePart(0.48, 0.03, 0.15, 0x111111, 0, 0.55, 0.16, headGroup);
+  capBrim.rotation.x = 0.15; // angled brim
+
+  const capGoldBadge = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffd200 }));
+  capGoldBadge.position.set(0, 0.62, 0.19);
+  headGroup.add(capGoldBadge);
+
+  // SWINGABLE LEGS
+  const legLGroup = new THREE.Group();
+  legLGroup.position.set(-0.24, 0.5, 0); // pivot at hip joint
+  guardGroup.add(legLGroup);
+  const legLJoint = makePart(0.24, 0.5, 0.24, 0xd0ccd6, 0, -0.25, 0, legLGroup);
+  const bootL = makePart(0.3, 0.18, 0.42, 0x111111, 0, -0.5, 0.06, legLGroup);
+
+  const legRGroup = new THREE.Group();
+  legRGroup.position.set(0.24, 0.5, 0);
+  guardGroup.add(legRGroup);
+  const legRJoint = makePart(0.24, 0.5, 0.24, 0xd0ccd6, 0, -0.25, 0, legRGroup);
+  const bootR = makePart(0.3, 0.18, 0.42, 0x111111, 0, -0.5, 0.06, legRGroup);
+
+  // SWINGABLE ARMS
+  const armLGroup = new THREE.Group();
+  armLGroup.position.set(-0.52, 0.8, 0); // pivot at shoulder
+  bodyGroup.add(armLGroup);
+  const armLJoint = makePart(0.2, 0.6, 0.2, 0x162c6b, 0, -0.3, 0, armLGroup);
+  
+  // Left arm holding Walkie-talkie
+  const handL = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), new THREE.MeshPhongMaterial({ color: 0xd0ccd6 }));
+  handL.position.set(0, -0.62, 0);
+  armLGroup.add(handL);
+  
+  const walkieG = new THREE.Group();
+  walkieG.position.set(0, -0.7, 0.05);
+  armLGroup.add(walkieG);
+  const wBody = makePart(0.08, 0.18, 0.08, 0x222222, 0, 0, 0, walkieG);
+  const wAntenna = makePart(0.015, 0.12, 0.015, 0x666666, 0.02, 0.12, 0, walkieG);
+
+  const armRGroup = new THREE.Group();
+  armRGroup.position.set(0.52, 0.8, 0);
+  bodyGroup.add(armRGroup);
+  const armRJoint = makePart(0.2, 0.6, 0.2, 0x162c6b, 0, -0.3, 0, armRGroup);
+  
+  // Right arm holding Flashlight (Flashlight projects a yellow cone)
+  const handR = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), new THREE.MeshPhongMaterial({ color: 0xd0ccd6 }));
+  handR.position.set(0, -0.62, 0);
+  armRGroup.add(handR);
+
+  const torchG = new THREE.Group();
+  torchG.position.set(0, -0.68, 0.08);
+  torchG.rotation.x = Math.PI / 2; // point forward
+  armRGroup.add(torchG);
+  const torchBody = makePart(0.08, 0.22, 0.08, 0x555555, 0, 0, 0, torchG);
+  const torchGlass = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.05, 8), new THREE.MeshPhongMaterial({ color: 0xffea00 }));
+  torchGlass.position.set(0, 0.11, 0);
+  torchGlass.rotation.x = Math.PI / 2;
+  torchG.add(torchGlass);
+
+  // Active yellow guard flashlight beam
+  const guardFlashLight = new THREE.PointLight(0xffea00, 1.8, 15);
+  guardFlashLight.position.set(0, 1.1, 1.5);
+  guardGroup.add(guardFlashLight);
+
+  // SpotLight target for torch cone
+  const torchTarget = new THREE.Object3D();
+  scene.add(torchTarget);
+  
+  const torchSpot = new THREE.SpotLight(0xffea00, 2.8, 22, Math.PI / 7, 0.5, 0.6);
+  torchSpot.castShadow = true;
+  guardGroup.add(torchSpot);
+  torchSpot.target = torchTarget;
+
+  // ── PATROL SITES CHECKPOINTS CONTROLS ───────────────────────────────────────
+  const zones = [
+    { id: 'gate',        label: '🚪 Gate Security Sector',     pos: [-2, 0, 12],  r: 6, icon: '🚪', tag: 'ACCESS POINT STATUS',      title: 'Active <em>Visitor Verification</em>',       text: 'Our sentinel system monitors entry points continuously. Physical logging, license scanner arrays, and credentials checks ensure zero breach allowance.', list: ['✓ Triple-factor biometric gates', '✓ Live telemetry plate recognition', '✓ Direct terminal operator integration'], night: false, lc: 0x00f0ff, li: 1.0 },
+    { id: 'hq',          label: '🏛 Abhedya Tactical HQ',         pos: [-18, 0, -5], r: 7, icon: '🛡️', tag: 'TACTICAL CELL COMMAND',     title: 'Quantum Shielding <em>H.Q.</em>',            text: 'Abhedya translates to <strong>Impenetrable</strong>. Guided by military standards and supervised by combat-hardened officers, HQ coordinates decentralized defenses.', list: ['✓ Encrypted communications grid', '✓ Military operational veteran advisors', '✓ 24/7 response team'], night: false, lc: 0xff2e93, li: 1.4 },
+    { id: 'corporate',   label: '🏢 Corporate IT Campus',      pos: [18, 0, -5],  r: 7, icon: '🏢', tag: 'CORPORATE SECTOR',          title: 'Facility Patrolling <em>Matrix</em>',        text: 'Seamless professional integration with modern offices. Deploying key-card management, CCTV control centers, and disciplined indoor sentinels.', list: ['✓ Multi-level access clearances', '✓ Zero-compromise executive support', '✓ Incident reporting database'], night: false, lc: 0xff2e93, li: 1.0 },
+    { id: 'fire',        label: '🔥 Threat Assessment Zone',  pos: [-18, 0, 16], r: 6, icon: '🔥', tag: 'DISASTER COUNTERMEASURES',   title: 'Fire Safety & <em>Tactics</em>',             text: 'All operational staff undergo emergency drills. Fire safety certification, hazard containment, and immediate medical emergency routing systems.', list: ['✓ Complete fire containment certified', '✓ Life support and trauma first response', '✓ Disaster evacuation coordinates'], night: true,  lc: 0xff8c00, li: 1.5 },
+    { id: 'nightwatch',  label: '🌙 Cyber Observation Tower',  pos: [18, 0, 16],  r: 6, icon: '🌙', tag: 'OVERWATCH SYSTEM',          title: 'Perimeter Night <em>Surveillance</em>', text: 'Scanning through darkness. Utilizing night-vision cameras, localized LiDAR radar sweeps, and thermal sensory arrays to negate stealth intrusions.', list: ['✓ Thermal scanner sweeps', '✓ Real-time telemetry linkage', '✓ Scheduled high-vigilance intervals'], night: true,  lc: 0x00f0ff, li: 1.2 },
+    { id: 'residential', label: '🏠 Residential Safe-Zone',     pos: [32, 0, -13], r: 7, icon: '🏠', tag: 'DOMESTIC ENVELOPE',         title: 'Securing Domestic <em>Perimeters</em>',     text: 'Protecting civilian residential clusters and housing estates. Meticulous visitor registration, community patrolling, and rapid-dispatch distress response.', list: ['✓ Local safety checks on schedule', '✓ Smart visitor credentials dispatch', '✓ Immediate emergency intercom hubs'], night: false, lc: 0xffd200, li: 1.1 },
+    { id: 'industrial',  label: '🏭 Industrial Plant Zone',    pos: [-28, 0, -20],r: 8, icon: '🏭', tag: 'HEAVY SECTOR COMMAND',      title: 'Heavy Industry <em>Overwatch</em>',        text: 'High-hazard facility security. Protecting pipelines, machinery assets, and warehouses. Enforcing strict safety protocols, shift tracking, and access logs.', list: ['✓ Asset risk mitigation audits', '✓ Toxic hazard warning detection', '✓ Multi-shift security logistics'], night: false, lc: 0xff8c00, li: 1.1 }
+  ];
+
+  let activeZone = null;
+  let manuallyClosedZone = null;
+
+  zones.forEach((z, i) => {
+    z.position = new THREE.Vector3(...z.pos);
+    
+    // Rotating holographic scan ring
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(z.r - 0.2, z.r, 32),
+      new THREE.MeshBasicMaterial({ color: z.lc, transparent: true, opacity: 0.28, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(z.pos[0], 0.05, z.pos[2]);
+    scene.add(ring);
+    z.ring = ring;
+
+    // Glowing lights
+    const zl = new THREE.PointLight(z.lc, z.li, 15);
+    zl.position.set(z.pos[0], 5, z.pos[2]);
+    scene.add(zl);
+    z.zlight = zl;
+
+    // Playful billboard tags
+    const canvasH = document.createElement('canvas');
+    canvasH.width = 288;
+    canvasH.height = 72;
+    const ctxH = canvasH.getContext('2d');
+    ctxH.fillStyle = 'rgba(20, 10, 48, 0.9)';
+    ctxH.beginPath();
+    ctxH.roundRect(0, 0, 288, 72, 12);
+    ctxH.fill();
+    ctxH.strokeStyle = '#ff2e93';
+    ctxH.lineWidth = 2;
+    ctxH.strokeRect(2, 2, 284, 68);
+    ctxH.fillStyle = '#ffcc00';
+    ctxH.font = 'bold 20px "Share Tech Mono"';
+    ctxH.textAlign = 'center';
+    ctxH.fillText(z.label, 144, 44);
+
+    const sp = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.6, 0.9),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvasH), transparent: true, depthWrite: false })
+    );
+    sp.position.set(z.pos[0], 4.8, z.pos[2]);
+    sp.scale.set(0, 0, 0);
+    scene.add(sp);
+    z.sprite = sp;
+  });
+
+  const zoneLabel = document.getElementById('zoneLabel');
+  const infoPanel = document.getElementById('infoPanel');
+
+  function openZone(z) {
+    document.getElementById('ipIcon').textContent = z.icon;
+    document.getElementById('ipTag').textContent = `⚡ [ ${z.tag} ]`;
+    document.getElementById('ipTitle').innerHTML = z.title;
+    document.getElementById('ipText').innerHTML = z.text;
+    document.getElementById('ipList').innerHTML = (z.list || []).map(l => `<li>${l}</li>`).join('');
+    
+    infoPanel.classList.remove('hidden');
+    requestAnimationFrame(() => infoPanel.classList.add('visible'));
+    
+    zoneLabel.textContent = z.label;
+    zoneLabel.classList.add('visible');
+
+    torchSpot.color.setHex(z.lc);
+    torchSpot.intensity = 3.5;
+    
+    if (z.ring) z.ring.material.opacity = 0.8;
+    if (z.sprite) z.sprite.scale.set(1.0, 1.0, 1.0);
+    
+    showSpeech(getSpeech(z.id));
+  }
+
+  function closeZone(prev) {
+    infoPanel.classList.remove('visible');
+    zoneLabel.classList.remove('visible');
+    setTimeout(() => {
+      if (!infoPanel.classList.contains('visible')) {
+        infoPanel.classList.add('hidden');
+      }
+    }, 450);
+
+    torchSpot.color.setHex(0xffea00);
+    torchSpot.intensity = 2.8;
+
+    if (prev) {
+      if (prev.ring) prev.ring.material.opacity = 0.28;
+      if (prev.sprite) prev.sprite.scale.set(0, 0, 0);
+    }
+  }
+
+  // Cross Button Handler
+  document.getElementById('ipClose').addEventListener('click', () => {
+    if (activeZone) {
+      manuallyClosedZone = activeZone; // block retrigger
+      closeZone(activeZone);
+      activeZone = null;
+    }
+  });
+
+  // ── SPEECH CHAT BUBBLER ─────────────────────────────────────────────────────
+  let speechMesh = null, speechTm = null;
+  function showSpeech(text) {
+    if (speechMesh) {
+      guardGroup.remove(speechMesh);
+      speechMesh = null;
+    }
+    clearTimeout(speechTm);
+    
+    const sc = document.createElement('canvas');
+    sc.width = 300;
+    sc.height = 70;
+    const cx = sc.getContext('2d');
+    cx.fillStyle = 'rgba(20, 10, 48, 0.95)';
+    cx.beginPath();
+    cx.roundRect(0, 0, 300, 70, 12);
+    cx.fill();
+    cx.strokeStyle = '#ff2e93';
+    cx.lineWidth = 2;
+    cx.strokeRect(2, 2, 296, 66);
+    cx.fillStyle = '#00f0ff';
+    cx.font = 'bold 16px "Share Tech Mono"';
+    cx.textAlign = 'center';
+    cx.fillText(text, 150, 42);
+
+    speechMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.5, 0.58),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false })
+    );
+    speechMesh.position.set(0, 2.3, 0);
+    guardGroup.add(speechMesh);
+    
+    speechTm = setTimeout(() => {
+      if (speechMesh) {
+        guardGroup.remove(speechMesh);
+        speechMesh = null;
+      }
+    }, 3500);
+  }
+
+  // Playful, cheerful bot messages!
+  function getSpeech(id) {
+    return {
+      gate: 'Beep boop! Access granted! 🔑',
+      hq: 'Welcome to Abhedya! Safe & sound! 🛡️',
+      corporate: 'Patrolling the office. No paperclips stolen! 🏢',
+      fire: 'Training mode! Fire is hot! 🧯',
+      nightwatch: 'Scanning for night ghosts... 👻',
+      residential: 'Cozy neighborhood secured! 🏡',
+      industrial: 'Watching the factories. Beep! 🏭'
+    }[id] || 'All clear! Happy patrolling! 😄';
+  }
+
+  // ── ARCADE RADAR MINIMAP ────────────────────────────────────────────────────
+  const mmC = document.getElementById('miniMapCanvas');
+  const mmCtx = mmC ? mmC.getContext('2d') : null;
+  const MMS = 130 / 150;
+  let radarAngle = 0;
+
+  function worldToMM(x, z) {
+    return [(x + 75) * MMS, (z + 75) * MMS];
+  }
+
+  function drawMiniMap() {
+    if (!mmCtx) return;
+    
+    mmCtx.fillStyle = isLight ? 'rgba(252, 250, 255, 0.95)' : 'rgba(14, 7, 34, 0.95)';
+    mmCtx.fillRect(0, 0, 130, 130);
+    
+    // Draw rings
+    mmCtx.strokeStyle = isLight ? 'rgba(0, 123, 176, 0.15)' : 'rgba(255, 46, 147, 0.15)';
+    mmCtx.lineWidth = 1;
+    for (let r = 20; r <= 60; r += 20) {
+      mmCtx.beginPath();
+      mmCtx.arc(65, 65, r, 0, Math.PI * 2);
+      mmCtx.stroke();
+    }
+
+    // Crosshairs
+    mmCtx.beginPath();
+    mmCtx.moveTo(65, 10); mmCtx.lineTo(65, 120);
+    mmCtx.moveTo(10, 65); mmCtx.lineTo(120, 65);
+    mmCtx.stroke();
+
+    // Radar Sweeper Wedge
+    radarAngle += 0.045;
+    mmCtx.save();
+    mmCtx.translate(65, 65);
+    mmCtx.rotate(radarAngle);
+    const gradSweep = mmCtx.createLinearGradient(0, 0, 80, 0);
+    gradSweep.addColorStop(0, 'rgba(255, 46, 147, 0)');
+    gradSweep.addColorStop(1, isLight ? 'rgba(0, 123, 176, 0.25)' : 'rgba(255, 46, 147, 0.35)');
+    mmCtx.fillStyle = gradSweep;
+    mmCtx.beginPath();
+    mmCtx.moveTo(0, 0);
+    mmCtx.arc(0, 0, 75, -0.25, 0);
+    mmCtx.closePath();
+    mmCtx.fill();
+    mmCtx.restore();
+
+    // Draw active zone centers
+    zones.forEach(z => {
+      const [mx, mz] = worldToMM(z.pos[0], z.pos[2]);
+      mmCtx.beginPath();
+      mmCtx.arc(mx, mz, z.r * MMS, 0, Math.PI * 2);
+      mmCtx.strokeStyle = isLight ? 'rgba(0, 123, 176, 0.3)' : 'rgba(0, 240, 255, 0.3)';
+      mmCtx.lineWidth = 1;
+      mmCtx.stroke();
+      mmCtx.fillStyle = activeZone === z ? 'rgba(255, 46, 147, 0.15)' : 'rgba(0, 240, 255, 0.05)';
+      mmCtx.fill();
+    });
+
+    // Draw Robot Guard Marker
+    const [gx, gz] = worldToMM(guardGroup.position.x, guardGroup.position.z);
+    
+    // Aura
+    const auraGrad = mmCtx.createRadialGradient(gx, gz, 0, gx, gz, 8);
+    auraGrad.addColorStop(0, 'rgba(255, 46, 147, 0.8)');
+    auraGrad.addColorStop(1, 'rgba(255, 46, 147, 0)');
+    mmCtx.beginPath();
+    mmCtx.arc(gx, gz, 8, 0, Math.PI * 2);
+    mmCtx.fillStyle = auraGrad;
+    mmCtx.fill();
+
+    // Dot
+    mmCtx.beginPath();
+    mmCtx.arc(gx, gz, 4, 0, Math.PI * 2);
+    mmCtx.fillStyle = isLight ? '#e01b6d' : '#00f0ff';
+    mmCtx.fill();
+
+    // Face direction indicator
+    mmCtx.save();
+    mmCtx.translate(gx, gz);
+    mmCtx.rotate(guardGroup.rotation.y + Math.PI);
+    mmCtx.beginPath();
+    mmCtx.moveTo(0, -6);
+    mmCtx.lineTo(-3, 2);
+    mmCtx.lineTo(3, 2);
+    mmCtx.closePath();
+    mmCtx.fillStyle = '#ffd200';
+    mmCtx.fill();
+    mmCtx.restore();
+  }
+
+  // ── MENU OVERLAYS CONTROLLER ───────────────────────────────────────────────
+  let openPanelId = null;
+
+  function openPanel(id) {
+    if (openPanelId && openPanelId !== id) {
+      const prev = document.getElementById(openPanelId);
+      if (prev) prev.classList.remove('open');
+    }
+    openPanelId = id;
+    const p = document.getElementById(id);
+    if (!p) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => p.classList.add('open')));
+  }
+
+  function closePanel(id) {
+    const p = document.getElementById(id);
+    if (!p) return;
+    p.classList.remove('open');
+    if (openPanelId === id) openPanelId = null;
+    document.querySelectorAll('.bn-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.section === 'world');
+    });
+  }
+
+  window.closePanel = closePanel;
+  document.getElementById('closeServices').addEventListener('click', () => closePanel('servicesPanel'));
+  document.getElementById('closeTeam').addEventListener('click', () => closePanel('teamPanel'));
+  document.getElementById('closeContact').addEventListener('click', () => closePanel('contactPanel'));
+
+  document.querySelectorAll('.bn-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.bn-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const sec = btn.dataset.section;
+      if (sec === 'world') {
+        if (openPanelId) {
+          document.getElementById(openPanelId).classList.remove('open');
+          openPanelId = null;
+        }
+        return;
+      }
+      openPanel(sec + 'Panel');
+    });
+  });
+
+  // ── AUDIT FORM HANDLER ──────────────────────────────────────────────────────
+  document.getElementById('contactForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('sendBtn');
+    const status = document.getElementById('formStatus');
+    const name = document.getElementById('cf_name').value.trim();
+    const phone = document.getElementById('cf_phone').value.trim();
+    const email = document.getElementById('cf_email').value.trim();
+    const service = document.getElementById('cf_service').value;
+    const message = document.getElementById('cf_message').value.trim();
+
+    if (!name || !phone || !message) {
+      status.textContent = '⚠ Beep! Fill out Name, Phone & Message please!';
+      status.className = 'form-status error';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'TRANSMITTING MESSAGE TELEMETRY…';
+    status.textContent = '';
+    status.className = 'form-status';
+
+    const params = {
+      from_name: name,
+      phone_number: phone,
+      email_address: email || 'Playful anonymous user',
+      service_required: service || 'General Audit',
+      message,
+      to_name: 'Abhedya Team'
+    };
+
+    try {
+      if (typeof emailjs !== 'undefined' && EMAILJS_SERVICE_ID !== 'YOUR_SERVICE_ID') {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+        status.textContent = '✓ Message sent! We will waddle back with an answer in 24 hours.';
+        status.className = 'form-status success';
+        e.target.reset();
+      } else {
+        const payload = `Hello Abhedya Security!\n\nName: ${name}\nPhone: ${phone}\nEmail: ${email || 'N/A'}\nService: ${service || 'N/A'}\nMessage: ${message}`;
+        window.open(`https://wa.me/917666793286?text=${encodeURIComponent(payload)}`, '_blank');
+        status.textContent = '✓ Beep! Redirected to WhatsApp Chat operator!';
+        status.className = 'form-status success';
+        e.target.reset();
+      }
+    } catch (err) {
+      status.textContent = '✗ Beep boop! Send failed. Call us instead: +91 76667 93286';
+      status.className = 'form-status error';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'INITIALIZE DEPLOYMENT REQUEST →';
+    }
+  });
+
+  // ── CAMERA ORBIT SYSTEM CONTROLLERS ──────────────────────────────────────────
+  let orbitTheta = 0, orbitPhi = 0.58, orbitRadius = 26;
+  let isDrag = false, lastMX = 0, lastMY = 0;
+  const camSmooth = new THREE.Vector3(0, 0, 0);
+
+  let pinchStart = null;
+
+  canvas.addEventListener('mousedown', e => {
+    isDrag = true;
+    lastMX = e.clientX;
+    lastMY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => { isDrag = false; });
+  window.addEventListener('mousemove', e => {
+    if (!isDrag) return;
+    orbitTheta -= (e.clientX - lastMX) * 0.005;
+    orbitPhi = Math.max(0.12, Math.min(1.4, orbitPhi - (e.clientY - lastMY) * 0.005));
+    lastMX = e.clientX;
+    lastMY = e.clientY;
+  });
+  canvas.addEventListener('wheel', e => {
+    orbitRadius = Math.max(10, Math.min(60, orbitRadius + e.deltaY * 0.035));
+  }, { passive: true });
+
+  // ── MOBILE TOUCH ZOOM + PAN CONTROLS ────────────────────────────────────────
+  function distBetweenTouches(t) {
+    return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  }
+
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      isDrag = true;
+      lastMX = e.touches[0].clientX;
+      lastMY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+      pinchStart = distBetweenTouches(e.touches);
+      isDrag = false;
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('touchmove', e => {
+    if (e.touches.length === 1 && isDrag) {
+      orbitTheta -= (e.touches[0].clientX - lastMX) * 0.006;
+      orbitPhi = Math.max(0.12, Math.min(1.4, orbitPhi - (e.touches[0].clientY - lastMY) * 0.006));
+      lastMX = e.touches[0].clientX;
+      lastMY = e.touches[0].clientY;
+    } else if (e.touches.length === 2 && pinchStart !== null) {
+      e.preventDefault();
+      const d = distBetweenTouches(e.touches);
+      orbitRadius = Math.max(10, Math.min(60, orbitRadius - (d - pinchStart) * 0.04));
+      pinchStart = d;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', () => {
+    isDrag = false;
+    pinchStart = null;
+  }, { passive: true });
+
+  // ── KEYBOARD CONTROL EVENTS ─────────────────────────────────────────────────
+  const keys = {};
+  window.addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+  });
+  window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+  // ── TACTICAL MOBILE JOYSTICK CONTROLLER ──────────────────────────────────────
+  const joyBase = document.getElementById('joystickBase');
+  const joyKnob = document.getElementById('joystickKnob');
+  const JOY_RADIUS = 33;
+  let joyActive = false;
+  let joyVec = { x: 0, y: 0 };
+  let joyId = null;
+
+  function joyStart(cx, cy) {
+    joyActive = true;
+    joyMove(cx, cy);
+  }
+  function joyMove(cx, cy) {
+    const rect = joyBase.getBoundingClientRect();
+    const ox = cx - (rect.left + rect.width / 2);
+    const oy = cy - (rect.top + rect.height / 2);
+    const mag = Math.min(JOY_RADIUS, Math.hypot(ox, oy));
+    const angle = Math.atan2(oy, ox);
+    const nx = Math.cos(angle) * mag;
+    const ny = Math.sin(angle) * mag;
+    joyKnob.style.transform = `translate(calc(-50% + ${nx}px), calc(-50% + ${ny}px))`;
+    joyVec = { x: nx / JOY_RADIUS, y: ny / JOY_RADIUS };
+  }
+  function joyEnd() {
+    joyActive = false;
+    joyVec = { x: 0, y: 0 };
+    joyKnob.style.transform = 'translate(-50%, -50%)';
+  }
+
+  joyBase.addEventListener('touchstart', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    joyId = e.changedTouches[0].identifier;
+    joyStart(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+  }, { passive: false });
+  joyBase.addEventListener('touchmove', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === joyId) { joyMove(t.clientX, t.clientY); break; }
+    }
+  }, { passive: false });
+  joyBase.addEventListener('touchend', e => {
+    e.stopPropagation();
+    for (const t of e.changedTouches) {
+      if (t.identifier === joyId) { joyEnd(); break; }
+    }
+  }, { passive: true });
+
+  joyBase.addEventListener('mousedown', e => { e.stopPropagation(); joyStart(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', e => { if (joyActive) joyMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', () => { if (joyActive) joyEnd(); });
+
+  // ── MAIN CORE GAME LOOP (ANIMATION ENGINE) ──────────────────────────────────
+  const clock = new THREE.Clock();
+  let tick = 0;
+  let walkCycle = 0;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const delta = Math.min(clock.getDelta(), 0.05);
+    const elapsed = clock.getElapsedTime();
+    tick++;
+
+    // Translate Inputs (WASD / Arrows / Touch Joysticks)
+    let moving = false;
+    const inputDir = new THREE.Vector3();
+
+    if (keys['ArrowUp'] || keys['KeyW']) { inputDir.z -= 1; moving = true; }
+    if (keys['ArrowDown'] || keys['KeyS']) { inputDir.z += 1; moving = true; }
+    if (keys['ArrowLeft'] || keys['KeyA']) { inputDir.x -= 1; moving = true; }
+    if (keys['ArrowRight'] || keys['KeyD']) { inputDir.x += 1; moving = true; }
+
+    if (joyActive && (Math.abs(joyVec.x) > 0.08 || Math.abs(joyVec.y) > 0.08)) {
+      inputDir.x += joyVec.x;
+      inputDir.z += joyVec.y;
+      moving = true;
+    }
+
+    if (moving) {
+      inputDir.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), orbitTheta);
+      const patrolSpeed = 5.8;
+      
+      // Update coordinates
+      guardGroup.position.x = Math.max(-60, Math.min(60, guardGroup.position.x + inputDir.x * patrolSpeed * delta));
+      guardGroup.position.z = Math.max(-60, Math.min(60, guardGroup.position.z + inputDir.z * patrolSpeed * delta));
+      
+      // Face heading smoothly
+      const targetRot = Math.atan2(inputDir.x, inputDir.z);
+      guardGroup.rotation.y = targetRot;
+      
+      walkCycle += delta * 9;
+      
+      // Playful waddling animation
+      const sw = Math.sin(walkCycle) * 0.65;
+      legLGroup.rotation.x = sw;
+      legRGroup.rotation.x = -sw;
+      armLGroup.rotation.x = -sw * 0.5;
+      armRGroup.rotation.x = sw * 0.5;
+      
+      // Funny sideways body tilting (adds waddle charm)
+      bodyGroup.rotation.z = Math.sin(walkCycle) * 0.12;
+      bodyGroup.position.y = 1.0 + Math.abs(Math.sin(walkCycle * 2)) * 0.05;
+      
+      // Hat bobbing
+      capBase.rotation.x = 0.05 + Math.sin(walkCycle * 2) * 0.05;
+    } else {
+      // Gentle breathing idle state
+      const breathe = Math.sin(elapsed * 2.0) * 0.025;
+      bodyGroup.position.y = 1.0 + breathe;
+      bodyGroup.rotation.z = 0;
+      
+      legLGroup.rotation.x = THREE.MathUtils.lerp(legLGroup.rotation.x, 0, 0.1);
+      legRGroup.rotation.x = THREE.MathUtils.lerp(legRGroup.rotation.x, 0, 0.1);
+      armLGroup.rotation.x = THREE.MathUtils.lerp(armLGroup.rotation.x, 0, 0.1);
+      armRGroup.rotation.x = THREE.MathUtils.lerp(armRGroup.rotation.x, 0, 0.1);
+      
+      // Curious idle head tilts
+      headGroup.rotation.z = Math.sin(elapsed * 0.8) * 0.04;
+      capBase.rotation.x = 0.05 + Math.sin(elapsed * 1.5) * 0.02;
+    }
+
+    // Dynamic torch flashlight position target
+    torchTarget.position.set(
+      guardGroup.position.x + Math.sin(guardGroup.rotation.y) * 6,
+      0.5,
+      guardGroup.position.z + Math.cos(guardGroup.rotation.y) * 6
+    );
+    torchSpot.position.set(guardGroup.position.x + Math.sin(guardGroup.rotation.y) * 0.5, 1.2, guardGroup.position.z + Math.cos(guardGroup.rotation.y) * 0.5);
+
+    // Speak bubbles face camera
+    if (speechMesh) speechMesh.rotation.y = -guardGroup.rotation.y + orbitTheta;
+    zones.forEach(z => {
+      if (z.sprite && z.sprite.scale.x > 0) z.sprite.rotation.y = orbitTheta;
+    });
+
+    // Hologram circles rotation
+    zones.forEach((z, idx) => {
+      if (z.ring) {
+        z.ring.rotation.z += 0.005;
+        z.ring.material.opacity = (activeZone === z ? 0.8 : 0.28) + Math.sin(elapsed * 2 + idx) * 0.06;
+      }
+      if (z.zlight) {
+        z.zlight.intensity = z.li * (0.85 + Math.sin(elapsed * 4 + idx) * 0.15);
+      }
+    });
+
+    // Flames ( assesses Assessment Zone)
+    flameMeshes.forEach((fm, idx) => {
+      fm.scale.y = 0.8 + Math.sin(elapsed * 9 + idx * 1.5) * 0.22;
+      fm.position.y = 1.9 + idx * 0.2 + Math.sin(elapsed * 11 + idx) * 0.04;
+    });
+
+    // Smoke
+    const smokePos = smoke.geometry.attributes.position;
+    for (let s = 0; s < 50; s++) {
+      smokePos.array[s * 3 + 1] += 0.035;
+      if (smokePos.array[s * 3 + 1] > 20) {
+        smokePos.array[s * 3 + 1] = 12;
+      }
+      smokePos.array[s * 3] += Math.sin(elapsed * 1.2 + s) * 0.005;
+    }
+    smokePos.needsUpdate = true;
+
+    // Zone triggers (with manual closing guard check)
+    let nearest = null;
+    let nd = Infinity;
+    zones.forEach(z => {
+      const d = guardGroup.position.distanceTo(z.position);
+      if (d < z.r && d < nd) {
+        nd = d;
+        nearest = z;
+      }
+    });
+
+    if (nearest) {
+      if (nearest !== activeZone) {
+        if (nearest !== manuallyClosedZone) {
+          if (activeZone) closeZone(activeZone);
+          activeZone = nearest;
+          openZone(nearest);
+        }
+      }
+    } else {
+      if (activeZone) {
+        closeZone(activeZone);
+        activeZone = null;
+      }
+      manuallyClosedZone = null;
+    }
+
+    // Camera follow physics
+    camSmooth.lerp(guardGroup.position, 0.06);
+    camera.position.set(
+      camSmooth.x + orbitRadius * Math.sin(orbitTheta) * Math.cos(orbitPhi),
+      camSmooth.y + orbitRadius * Math.sin(orbitPhi),
+      camSmooth.z + orbitRadius * Math.cos(orbitTheta) * Math.cos(orbitPhi)
+    );
+    camera.lookAt(camSmooth.x, camSmooth.y + 1.2, camSmooth.z);
+
+    if (tick % 3 === 0) {
+      drawMiniMap();
+    }
+    renderer.render(scene, camera);
+  }
+
+  // Playful boot prompt
+  setTimeout(() => {
+    showSpeech(isMobile() ? 'Waddle with the joystick! 🤖' : 'Move me with WASD keys! 🥸');
+  }, 1200);
+
+  // Run loop
+  animate();
+
+} catch (err) {
+  console.error("ThreeJS Engine failed: ", err);
   startWorld();
 }
