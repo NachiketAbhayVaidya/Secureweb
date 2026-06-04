@@ -2,90 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
   <title>Abhedya Security Solutions</title>
   <link rel="stylesheet" href="style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet"/>
-  <!-- Three.js + dependencies -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <!-- EmailJS -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
 <body>
 
-  <!-- LOADING SCREEN -->
+  <!-- LOADING -->
   <div id="loadingScreen">
     <div class="ls-inner">
       <div class="ls-logo">ABHEDYA</div>
-      <div class="ls-sub">SECURITY SOLUTIONS</div>
+      <div class="ls-sub">Security Solutions</div>
       <div class="ls-bar-wrap"><div class="ls-bar" id="lsBar"></div></div>
       <div class="ls-hint" id="lsHint">Initializing world…</div>
     </div>
   </div>
 
-  <!-- CONTROLS HINT -->
-  <div id="controlsHint">
-    <span>⬆⬇⬅➡ or WASD — Move Guard</span>
-    <span>🖱 Drag — Orbit Camera</span>
-    <span>Click glowing zones to explore</span>
-  </div>
-
-  <!-- THREE.JS CANVAS -->
+  <!-- CANVAS -->
   <canvas id="threeCanvas"></canvas>
 
-  <!-- HUD OVERLAY -->
+  <!-- CONTROLS HINT (desktop only) -->
+  <div id="controlsHint">
+    <span>⬆⬇⬅➡ / WASD — Move Guard</span>
+    <span>🖱 Drag — Orbit</span>
+    <span>Scroll — Zoom</span>
+  </div>
+
+  <!-- HUD -->
   <div id="hud">
     <div class="hud-logo">
       <span class="hud-name">ABHEDYA</span>
-      <span class="hud-tag">SECURITY</span>
+      <span class="hud-tag">Security Solutions</span>
     </div>
-    <div id="zoneLabel" class="zone-label"></div>
+    <div class="hud-right">
+      <div id="zoneLabel" class="zone-label"></div>
+      <button id="themeToggle" title="Toggle theme">☀️</button>
+    </div>
   </div>
 
-  <!-- MINI MAP -->
+  <!-- MINI MAP (hidden on small mobile) -->
   <div id="miniMap">
-    <canvas id="miniMapCanvas" width="160" height="160"></canvas>
+    <canvas id="miniMapCanvas" width="130" height="130"></canvas>
     <div class="mm-label">MAP</div>
   </div>
 
-  <!-- INFO PANEL (slides in on zone enter) -->
+  <!-- INFO PANEL -->
   <div id="infoPanel" class="info-panel hidden">
     <button class="ip-close" id="ipClose">✕</button>
     <div class="ip-icon" id="ipIcon"></div>
-    <div class="ip-tag" id="ipTag"></div>
-    <h2 class="ip-title" id="ipTitle"></h2>
-    <p class="ip-text" id="ipText"></p>
-    <ul class="ip-list" id="ipList"></ul>
+    <div class="ip-tag"   id="ipTag"></div>
+    <h2  class="ip-title" id="ipTitle"></h2>
+    <p   class="ip-text"  id="ipText"></p>
+    <ul  class="ip-list"  id="ipList"></ul>
+  </div>
+
+  <!-- MOBILE JOYSTICK -->
+  <div id="joystickWrap">
+    <div id="joystickBase">
+      <div id="joystickKnob"></div>
+    </div>
+    <div class="joy-hint">Move Guard</div>
   </div>
 
   <!-- BOTTOM NAV -->
   <nav id="bottomNav">
-    <button class="bn-btn active" data-section="world">🌍 World</button>
-    <button class="bn-btn" data-section="services">🛡 Services</button>
-    <button class="bn-btn" data-section="team">👤 Team</button>
-    <button class="bn-btn" data-section="contact">📞 Contact</button>
+    <button class="bn-btn active" data-section="world">🌍<span>World</span></button>
+    <button class="bn-btn"        data-section="services">🛡<span>Services</span></button>
+    <button class="bn-btn"        data-section="team">👤<span>Team</span></button>
+    <button class="bn-btn"        data-section="contact">📞<span>Contact</span></button>
   </nav>
 
   <!-- SERVICES PANEL -->
-  <div id="servicesPanel" class="full-panel hidden">
-    <button class="fp-close" onclick="closePanel('servicesPanel')">✕</button>
+  <div id="servicesPanel" class="full-panel">
+    <button class="fp-close" id="closeServices">✕</button>
     <div class="fp-inner">
       <div class="fp-tag">WHAT WE OFFER</div>
       <h2 class="fp-title">Our <span>Services</span></h2>
       <div class="services-grid">
-        <div class="sv-card"><span class="sv-icon">🏠</span><h3>Residential</h3><p>24/7 gate management, visitor logging and community safety.</p></div>
-        <div class="sv-card"><span class="sv-icon">🏢</span><h3>Corporate</h3><p>Professional guards, access systems and floor patrolling for IT parks and offices.</p></div>
-        <div class="sv-card"><span class="sv-icon">🏭</span><h3>Industrial</h3><p>Perimeter security, shift guards and safety protocol enforcement.</p></div>
-        <div class="sv-card"><span class="sv-icon">🎟</span><h3>Events</h3><p>Crowd management, VIP escorts and emergency response at events.</p></div>
-        <div class="sv-card"><span class="sv-icon">🧹</span><h3>Facility Mgmt</h3><p>Housekeeping staffing and integrated facility operations.</p></div>
-        <div class="sv-card"><span class="sv-icon">🚗</span><h3>Mobile Patrol</h3><p>Rapid response mobile units covering wider premises on schedule.</p></div>
+        <div class="sv-card"><span class="sv-icon">🏠</span><h3>Residential</h3><p>24/7 gate management, visitor logging and round-the-clock community safety for gated societies.</p></div>
+        <div class="sv-card"><span class="sv-icon">🏢</span><h3>Corporate & IT Parks</h3><p>Professional guards, RFID access systems and disciplined floor patrolling for offices.</p></div>
+        <div class="sv-card"><span class="sv-icon">🏭</span><h3>Industrial Sites</h3><p>Perimeter security, shift guards and strict safety protocol enforcement for factories.</p></div>
+        <div class="sv-card"><span class="sv-icon">🎟</span><h3>Events & VIP</h3><p>Crowd management, VIP escorts and emergency response teams at large-scale events.</p></div>
+        <div class="sv-card"><span class="sv-icon">🧹</span><h3>Facility Management</h3><p>Housekeeping staffing and integrated facility operations support across premises.</p></div>
+        <div class="sv-card"><span class="sv-icon">🚗</span><h3>Mobile Patrol</h3><p>Rapid response mobile units covering wider premises and multi-site properties on schedule.</p></div>
       </div>
     </div>
   </div>
 
   <!-- TEAM PANEL -->
-  <div id="teamPanel" class="full-panel hidden">
-    <button class="fp-close" onclick="closePanel('teamPanel')">✕</button>
+  <div id="teamPanel" class="full-panel">
+    <button class="fp-close" id="closeTeam">✕</button>
     <div class="fp-inner">
       <div class="fp-tag">LEADERSHIP</div>
       <h2 class="fp-title">The Team Behind <span>The Shield</span></h2>
@@ -95,70 +105,76 @@
             <img src="https://abhedya.net/img/founderimg.jpeg" alt="Ashutosh Gole" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
             <div class="tm-fallback">AG</div>
           </div>
-          <div class="tm-tag">FOUNDER & CEO</div>
-          <h3>Ashutosh Gole</h3>
-          <p>Built Abhedya on a vision to transform private security with armed forces values — discipline, vigilance, and accountability.</p>
+          <div class="tm-info">
+            <span class="tm-tag">FOUNDER & CEO</span>
+            <h3>Ashutosh Gole</h3>
+            <p>Built Abhedya on a vision to transform private security with armed forces values — discipline, vigilance, and uncompromising accountability.</p>
+          </div>
         </div>
         <div class="tm-card">
           <div class="tm-img-wrap">
             <img src="https://abhedya.net/img/ad1.jpeg" alt="Col. Nikhil Gajjar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
             <div class="tm-fallback">NG</div>
           </div>
-          <div class="tm-tag">ADVISOR & MENTOR</div>
-          <h3>Col. Nikhil Gajjar</h3>
-          <p>Decorated armed forces veteran bringing strategic security expertise and military discipline to Abhedya.</p>
+          <div class="tm-info">
+            <span class="tm-tag">ADVISOR & MENTOR</span>
+            <h3>Col. Nikhil Gajjar</h3>
+            <p>Decorated armed forces veteran bringing decades of strategic security expertise and military operational discipline.</p>
+          </div>
         </div>
         <div class="tm-card">
-          <div class="tm-img-wrap">
-            <div class="tm-fallback" style="display:flex">SS</div>
+          <div class="tm-img-wrap"><div class="tm-fallback" style="display:flex">SS</div></div>
+          <div class="tm-info">
+            <span class="tm-tag">ADVISOR & MENTOR</span>
+            <h3>Col. Surojit Sinha (Retd.)</h3>
+            <p>Retired Colonel with extensive experience in security operations, personnel training and national-level threat assessment.</p>
           </div>
-          <div class="tm-tag">ADVISOR & MENTOR</div>
-          <h3>Col. Surojit Sinha (Retd.)</h3>
-          <p>Retired Colonel with extensive experience in security operations and national-level threat assessment.</p>
         </div>
       </div>
     </div>
   </div>
 
   <!-- CONTACT PANEL -->
-  <div id="contactPanel" class="full-panel hidden">
-    <button class="fp-close" onclick="closePanel('contactPanel')">✕</button>
-    <div class="fp-inner contact-layout">
-      <div class="contact-left">
-        <div class="fp-tag">REACH OUT</div>
-        <h2 class="fp-title">Let's Secure <span>Your World</span></h2>
-        <p class="contact-sub">Tell us about your needs. We respond within 24 hours.</p>
-        <a href="https://wa.me/917666793286" class="wa-btn" target="_blank">
-          <span>💬</span>
-          <div><div class="wa-label">WhatsApp Us</div><div class="wa-num">+91 76667 93286</div></div>
-        </a>
-        <div class="stats-row">
-          <div class="sr-item"><div class="sr-num">150+</div><div class="sr-lbl">Clients</div></div>
-          <div class="sr-item"><div class="sr-num">500+</div><div class="sr-lbl">Personnel</div></div>
-          <div class="sr-item"><div class="sr-num">300+</div><div class="sr-lbl">Sites</div></div>
-        </div>
-      </div>
-      <div class="contact-right">
-        <form id="contactForm">
-          <div class="fg"><label>Full Name *</label><input type="text" id="cf_name" placeholder="Your name" required/></div>
-          <div class="fg"><label>Phone Number *</label><input type="tel" id="cf_phone" placeholder="+91 XXXXX XXXXX" required/></div>
-          <div class="fg"><label>Email</label><input type="email" id="cf_email" placeholder="your@email.com"/></div>
-          <div class="fg">
-            <label>Service Required</label>
-            <select id="cf_service">
-              <option value="">Select a service</option>
-              <option>Residential Security</option>
-              <option>Corporate / IT Park</option>
-              <option>Industrial Site</option>
-              <option>Event Security</option>
-              <option>Facility Management</option>
-              <option>Mobile Patrol</option>
-            </select>
+  <div id="contactPanel" class="full-panel">
+    <button class="fp-close" id="closeContact">✕</button>
+    <div class="fp-inner">
+      <div class="fp-tag">REACH OUT</div>
+      <h2 class="fp-title">Let's Secure <span>Your World</span></h2>
+      <div class="contact-layout">
+        <div class="contact-left">
+          <p class="contact-sub">Tell us about your security needs. Our team responds within 24 hours with a customised solution.</p>
+          <a href="https://wa.me/917666793286" class="wa-btn" target="_blank">
+            <span>💬</span>
+            <div><div class="wa-label">WhatsApp Us</div><div class="wa-num">+91 76667 93286</div></div>
+          </a>
+          <div class="stats-row">
+            <div class="sr-item"><div class="sr-num">150+</div><div class="sr-lbl">Clients</div></div>
+            <div class="sr-item"><div class="sr-num">500+</div><div class="sr-lbl">Personnel</div></div>
+            <div class="sr-item"><div class="sr-num">300+</div><div class="sr-lbl">Sites</div></div>
           </div>
-          <div class="fg"><label>Message *</label><textarea id="cf_message" rows="4" placeholder="Tell us about your requirements…" required></textarea></div>
-          <button type="submit" class="send-btn" id="sendBtn">Send Request →</button>
-          <div id="formStatus" class="form-status"></div>
-        </form>
+        </div>
+        <div class="contact-right">
+          <form id="contactForm" novalidate>
+            <div class="fg"><label>Full Name *</label><input type="text"  id="cf_name"    placeholder="Your name" required/></div>
+            <div class="fg"><label>Phone *</label>    <input type="tel"   id="cf_phone"   placeholder="+91 XXXXX XXXXX" required/></div>
+            <div class="fg"><label>Email</label>      <input type="email" id="cf_email"   placeholder="your@email.com"/></div>
+            <div class="fg">
+              <label>Service Required</label>
+              <select id="cf_service">
+                <option value="">Select a service</option>
+                <option>Residential Security</option>
+                <option>Corporate / IT Park</option>
+                <option>Industrial Site</option>
+                <option>Event Security</option>
+                <option>Facility Management</option>
+                <option>Mobile Patrol</option>
+              </select>
+            </div>
+            <div class="fg"><label>Message *</label><textarea id="cf_message" rows="4" placeholder="Tell us about your requirements…" required></textarea></div>
+            <button type="submit" class="send-btn" id="sendBtn">Send Request →</button>
+            <div id="formStatus" class="form-status"></div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
