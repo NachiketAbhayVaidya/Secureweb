@@ -142,13 +142,56 @@ sx.fillStyle='#0d1a2e';sx.font='bold 60px Arial';sx.textAlign='center';sx.fillTe
 const signM=new THREE.Mesh(new THREE.PlaneGeometry(5,1.2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signC)}));
 signM.position.set(-18,21.5,-3.9);scene.add(signM);
 
-// ── GATE ─────────────────────────────────────────────────────────────────────
-box(0.5,5,0.5,0xD4AF37,-2.5,2.5,12,null,'gate');
-box(0.5,5,0.5,0xD4AF37,2.5,2.5,12,null,'gate');
-box(5.5,0.3,0.3,0xD4AF37,0,5.2,12,null,'gate');
-for(let i=0;i<4;i++)box(0.15,4,0.15,0xc8a020,-2+i*1.3,2,12,null,'gate');
-box(2,3,2,0x1a3050,5,1.5,12,null,'booth');
-box(2,0.15,2,0xD4AF37,5,3.1,12,null,'booth');
+// ── GATE — realistic security gate ──────────────────────────────────────────
+// Left thick pillar
+box(0.7,5.5,0.7,0xc8c0a8,-3.5,2.75,12,null,'gate');
+// Right thick pillar
+box(0.7,5.5,0.7,0xc8c0a8, 3.5,2.75,12,null,'gate');
+// Pillar caps (darker stone)
+box(0.9,0.3,0.9,0xb0a898,-3.5,5.65,12,null,'gate');
+box(0.9,0.3,0.9,0xb0a898, 3.5,5.65,12,null,'gate');
+// Top arch / crossbar with depth
+box(7.2,0.5,0.5,0xa89880,0,5.65,12,null,'gate');
+// Gate name plate on arch
+const gateSignC=document.createElement('canvas'); gateSignC.width=256; gateSignC.height=48;
+const gsCtx=gateSignC.getContext('2d');
+gsCtx.fillStyle='#c8a040'; gsCtx.fillRect(0,0,256,48);
+gsCtx.fillStyle='#1a1200'; gsCtx.font='bold 22px Arial'; gsCtx.textAlign='center'; gsCtx.fillText('ABHEDYA SECURITY',128,32);
+const gatePlate=new THREE.Mesh(new THREE.PlaneGeometry(3.5,0.65),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(gateSignC)}));
+gatePlate.position.set(0,5.65,12.28); scene.add(gatePlate);
+// Left gate door — metal bars panel
+const lDoor=new THREE.Group(); scene.add(lDoor);
+// Door frame left
+box(0.12,4.2,0.15,0x888878,-1.0,2.1,12,null,'gate');
+box(0.12,4.2,0.15,0x888878,-3.1,2.1,12,null,'gate');
+box(3.2,0.12,0.15,0x888878,-2.0,4.15,12,null,'gate'); // top rail
+box(3.2,0.12,0.15,0x888878,-2.0,0.15,12,null,'gate'); // bottom rail
+box(3.2,0.12,0.15,0x888878,-2.0,2.1,12,null,'gate');  // mid rail
+// Vertical bars left door
+for(let i=0;i<5;i++) box(0.1,4.2,0.1,0x707068,-3.0+i*0.52,2.1,12,null,'gate');
+// Right gate door
+box(0.12,4.2,0.15,0x888878,1.0,2.1,12,null,'gate');
+box(0.12,4.2,0.15,0x888878,3.1,2.1,12,null,'gate');
+box(3.2,0.12,0.15,0x888878,2.0,4.15,12,null,'gate');
+box(3.2,0.12,0.15,0x888878,2.0,0.15,12,null,'gate');
+box(3.2,0.12,0.15,0x888878,2.0,2.1,12,null,'gate');
+for(let i=0;i<5;i++) box(0.1,4.2,0.1,0x707068,1.05+i*0.52,2.1,12,null,'gate');
+// Guard booth — realistic cabin
+box(2.4,3.5,2.4,0xd8d0c0,6.2,1.75,12,null,'booth');   // walls
+box(2.6,0.2,2.6,0xb8afa0,6.2,3.55,12,null,'booth');   // flat roof
+box(2.4,0.08,2.4,0x606050,6.2,3.65,12,null,'booth');  // roof edge
+// Booth window
+const bwm=new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.7),new THREE.MeshBasicMaterial({color:0x88aacc,opacity:0.6,transparent:true}));
+bwm.position.set(5.0,2.1,12.01);scene.add(bwm);
+// Booth door
+box(0.55,1.9,0.06,0xb8b0a0,6.8,0.95,12,null,'booth');
+// Boom barrier
+box(2.5,0.1,0.1,0xff4444,-0.5,2.2,13.5,null,'gate'); // barrier arm (red/white)
+box(2.5,0.1,0.1,0xffffff,-0.5,2.2,13.5,null,'gate');
+const barrier=new THREE.Mesh(new THREE.BoxGeometry(2.8,0.12,0.12),new THREE.MeshLambertMaterial({color:0xee3322}));
+barrier.position.set(-0.5,2.2,13.5); scene.add(barrier);
+const barrierPost=new THREE.Mesh(new THREE.BoxGeometry(0.2,2.2,0.2),new THREE.MeshLambertMaterial({color:0xd0c8b8}));
+barrierPost.position.set(0.9,1.1,13.5); scene.add(barrierPost);
 
 // ── CORPORATE ────────────────────────────────────────────────────────────────
 box(10,16,8,0x0d2040,18,8,-5,null,'corporate');
@@ -285,28 +328,28 @@ const DARK={
   factory:0x0c1a28, chimney:0x1a2a3a,
   trunk:0x4a3520, treetop:0x0d2d18,
 };
-// LIGHT colours — Vibrant Aesthetic Pastel-Pop Palette
+// LIGHT colours — Realistic Daylight Palette
 const LIGHT={
-  // Ground: warm golden meadow
-  ground:0xf5c842,
-  // Grid: soft coral + peach
-  gridA:0xff6b6b, gridB:0xffaa88,
-  // HQ: rich coral-pink facade
-  hqMain:0xff8c69, hqAccent:0xff6f61, hqSide:0xf4a261,
-  // Corporate: sky teal glass tower
-  corporate:0x00b4d8, corporateTop:0x0096c7, corpGlass:0x48cae4,
-  // Gate booth: warm saffron
-  booth:0xffd166,
-  // Fire zone: bright orange-red brick
-  fire:0xe63946,
-  // Night tower: deep violet-blue (still bold in day)
-  tower:0x7209b7, towerTop:0x560bad,
-  // Houses: pastel mint + vivid coral roof
-  house:0xb7e4c7, roof:0xef233c,
-  // Factory: lavender steel
-  factory:0xc77dff, chimney:0x9d4edd,
-  // Trees: rich earthy trunk + vivid leaf green
-  trunk:0x9c6644, treetop:0x52b788,
+  // Ground: natural grass green
+  ground:0x5a8a4a,
+  // Grid: subtle earthy olive tones
+  gridA:0x4a7a3a, gridB:0x3d6830,
+  // HQ: warm concrete grey with a subtle beige
+  hqMain:0xb0a898, hqAccent:0x9a9080, hqSide:0xa09888,
+  // Corporate: real glass — light blue-grey tinted windows
+  corporate:0x708090, corporateTop:0x607080, corpGlass:0x89aac0,
+  // Gate booth: cream/off-white security cabin
+  booth:0xd6ccb8,
+  // Fire zone: dark steel drum
+  fire:0x606060,
+  // Night tower: dark gunmetal grey concrete
+  tower:0x7a8090, towerTop:0x6a7080,
+  // Houses: warm sandy brick + terracotta roof tiles
+  house:0xc8a87a, roof:0x9b3a2a,
+  // Factory: industrial grey concrete
+  factory:0x808888, chimney:0x6a7070,
+  // Trees: natural bark brown + rich leaf green
+  trunk:0x7a5230, treetop:0x3a7a28,
 };
 
 // Collect all material references once after scene is built
@@ -318,27 +361,26 @@ function applyTheme(light){
   isLight=light;
   const C=light?LIGHT:DARK;
   // Sky / fog
-  // Sky: lavender-pink gradient sky vs deep navy
-  const skyCol = light ? 0xffd6e7 : 0x07111f;
+  // Sky: real daytime sky blue vs deep navy night
+  const skyCol = light ? 0x87ceeb : 0x07111f;
   renderer.setClearColor(skyCol);
-  scene.fog.color.set(light ? 0xffe8f0 : 0x07111f);
-  scene.fog.near = light ? 50 : 40;
-  scene.fog.far  = light ? 140 : 120;
+  // Fog: light blue atmospheric haze for depth
+  scene.fog.color.set(light ? 0xa8d8ea : 0x07111f);
+  scene.fog.near = light ? 45 : 40;
+  scene.fog.far  = light ? 130 : 120;
   // Ground
   ground.material.color.set(C.ground);
-  // Grid — coral + peach crosshatch
+  // Grid — subtle earthy tones in day
   if(grid.material.length){grid.material[0].color.set(C.gridA);grid.material[1].color.set(C.gridB);}
   // Stars / moon / sun
   stars.visible=!light; moonMesh.visible=!light; haloMesh.visible=!light;
   sunSphere.visible=light;
-  // Lights — warm golden-pink sunlight in day
-  ambient.color.set(light?0xfff0f5:0x223355);
-  ambient.intensity=light?2.0:0.8;
-  sun.color.set(light?0xffcc88:0xfff5e0);
-  sun.intensity=light?2.4:1.2;
+  // Lights — warm natural white sunlight in day
+  ambient.color.set(light?0xfff8f0:0x223355);
+  ambient.intensity=light?1.8:0.8;
+  sun.color.set(light?0xfff4e0:0xfff5e0); // warm white sunlight
+  sun.intensity=light?2.2:1.2;
   moonLight.intensity=light?0:0.6;
-  // Tint fog to match sky colour
-  if(light){ scene.fog.color.set(0xffdde8); }
   // Apply to all registered mats
   allBuildingMats.forEach(o=>{ if(o&&o.mat&&o.mat.color) o.mat.color.set(light?o.lightCol:o.darkCol); });
   // Tree tops specially (they are separate)
