@@ -127,9 +127,12 @@ sunSphere.position.set(30,48,-30);scene.add(sunSphere);sunSphere.visible=false;
 box(8,20,8,0x0c1e38,-18,10,-8,null,'hqMain');
 box(5,6,5,0x0e2244,-18,23,-8,null,'hqMain');
 box(5,12,6,0x0b1c32,-26,6,-8,null,'hqMain');
+// HQ building centre x=-18, width=8 → spans -22 to -14
+// 3 columns spaced 2.2 apart, centred on -18: -20.2, -18, -15.8
+// front face z = -8+4 = -4, plane sits just in front at z=-3.85
 for(let r=0;r<4;r++)for(let c=0;c<3;c++){
-  const w=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.8),new THREE.MeshBasicMaterial({color:0xD4AF37,opacity:0.7,transparent:true}));
-  w.position.set(-14+c*2,4+r*3.5,-3.9);scene.add(w);
+  const w=new THREE.Mesh(new THREE.PlaneGeometry(0.7,0.9),new THREE.MeshBasicMaterial({color:0xD4AF37,opacity:0.85,transparent:true}));
+  w.position.set(-20.2+c*2.2, 3+r*3.8, -3.85);scene.add(w);
   themeMats.hqWindow.push(w.material);
 }
 // HQ sign
@@ -466,6 +469,9 @@ window.addEventListener('mouseup',()=>{if(joyActive)joyEnd();});
 // ── ZONE INFO PANEL ───────────────────────────────────────────────────────────
 let activeZone=null;
 let userClosedZoneId=null; // tracks which zone the user manually dismissed
+const securedZones=new Set(); // zones that have been secured by the guard
+let zoneTimer=null;           // { zone, startTime, duration }
+let zoneTimerEl=null;         // DOM element for the circular timer
 const zoneLabel=document.getElementById('zoneLabel');
 const infoPanel=document.getElementById('infoPanel');
 
@@ -729,11 +735,37 @@ function animate(){
   }
   sa.needsUpdate=true;
 
-  // Rings
+  // Rings — green if secured, active colour if current, dim otherwise
   zones.forEach((z,i)=>{
-    if(z.ring){z.ring.material.opacity=(activeZone===z?0.62:0.18)+Math.sin(elapsed*2+i)*0.08;z.ring.rotation.z+=0.004;}
-    if(z.zlight)z.zlight.intensity=z.li*(0.85+Math.sin(elapsed*3+i)*0.15);
+    if(z.ring){
+      if(securedZones.has(z.id)){
+        z.ring.material.color.set(0x00ff88);
+        z.ring.material.opacity=0.55+Math.sin(elapsed*1.5+i)*0.1;
+      } else {
+        z.ring.material.color.set(z.lc);
+        z.ring.material.opacity=(activeZone===z?0.62:0.18)+Math.sin(elapsed*2+i)*0.08;
+      }
+      z.ring.rotation.z+=0.004;
+    }
+    if(z.zlight){
+      if(securedZones.has(z.id)){
+        z.zlight.color.set(0x00ff88);
+        z.zlight.intensity=1.2+Math.sin(elapsed*2+i)*0.2;
+      } else {
+        z.zlight.color.set(z.lc);
+        z.zlight.intensity=z.li*(0.85+Math.sin(elapsed*3+i)*0.15);
+      }
+    }
   });
+  // Update circular timer progress
+  if(zoneTimer && zoneTimerEl){
+    const prog=Math.min(1,(elapsed-zoneTimer.startTime)/zoneTimer.duration);
+    const circ=2*Math.PI*36; // r=36
+    const dashOffset=circ*(1-prog);
+    const arc=zoneTimerEl.querySelector('.zt-arc');
+    if(arc) arc.style.strokeDashoffset=dashOffset;
+    if(prog>=1) completeZoneTimer();
+  }
   spot.intensity=1.8+Math.sin(elapsed*0.5)*0.3;
   moonMesh.rotation.y+=0.0008;haloMesh.rotation.z+=0.001;
   if(!isLight)stars.material.opacity=0.55+Math.sin(elapsed*0.4)*0.15;
@@ -744,10 +776,14 @@ function animate(){
   if(nearest!==activeZone){
     if(nearest){
       closeZone(activeZone);
+      cancelZoneTimer();
       activeZone=nearest;
-      openZone(nearest); // openZone checks userClosedZoneId internally
+      openZone(nearest);
+      // Start securing timer only if not already secured
+      if(!securedZones.has(nearest.id)) startZoneTimer(nearest, elapsed);
     } else {
-      userClosedZoneId=null; // guard left all zones — reset so it reopens on next entry
+      userClosedZoneId=null;
+      cancelZoneTimer();
       closeZone(activeZone);
       activeZone=null;
     }
@@ -764,6 +800,96 @@ function animate(){
 
   if(frameN%3===0)drawMiniMap();
   renderer.render(scene,camera);
+}
+
+// ── ZONE SECURING TIMER ──────────────────────────────────────────────────────
+function startZoneTimer(z, elapsed){
+  cancelZoneTimer();
+  zoneTimer={ zone:z, startTime:elapsed, duration:2.0 };
+  // Create DOM timer overlay
+  const el=document.createElement('div');
+  el.id='zoneTimerUI';
+  el.innerHTML=`
+    <svg viewBox="0 0 88 88" width="88" height="88">
+      <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
+      <circle class="zt-arc" cx="44" cy="44" r="36" fill="none"
+        stroke="#${z.lc.toString(16).padStart(6,'0')}"
+        stroke-width="6" stroke-linecap="round"
+        stroke-dasharray="${2*Math.PI*36}"
+        stroke-dashoffset="${2*Math.PI*36}"
+        transform="rotate(-90 44 44)"
+        style="transition:stroke-dashoffset 0.05s linear"/>
+      <text x="44" y="50" text-anchor="middle" fill="white"
+        font-family="monospace" font-size="14" font-weight="bold">SEC</text>
+    </svg>
+    <div class="zt-label">SECURING…</div>
+  `;
+  el.style.cssText=`
+    position:fixed;left:50%;bottom:95px;transform:translateX(-50%);
+    z-index:350;display:flex;flex-direction:column;align-items:center;gap:4px;
+    pointer-events:none;animation:ztFadeIn 0.3s ease;
+  `;
+  // Inject keyframe if not already there
+  if(!document.getElementById('zt-style')){
+    const st=document.createElement('style');
+    st.id='zt-style';
+    st.textContent=`
+      @keyframes ztFadeIn{from{opacity:0;transform:translateX(-50%) scale(0.8)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+      @keyframes ztSecured{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.3)}100%{transform:translateX(-50%) scale(1)}}
+      #zoneTimerUI .zt-label{font-family:monospace;font-size:11px;letter-spacing:2px;color:#fff;text-transform:uppercase;text-shadow:0 0 8px rgba(255,255,255,0.5)}
+    `;
+    document.head.appendChild(st);
+  }
+  document.body.appendChild(el);
+  zoneTimerEl=el;
+}
+
+function cancelZoneTimer(){
+  zoneTimer=null;
+  if(zoneTimerEl){ zoneTimerEl.remove(); zoneTimerEl=null; }
+}
+
+function completeZoneTimer(){
+  const z=zoneTimer.zone;
+  cancelZoneTimer();
+  securedZones.add(z.id);
+  // Flash green "SECURED!" popup above guard
+  showSpeech('✅ '+z.id.toUpperCase()+' SECURED!');
+  // Briefly show a big green flash on screen
+  const flash=document.createElement('div');
+  flash.style.cssText=`
+    position:fixed;inset:0;z-index:340;pointer-events:none;
+    background:radial-gradient(circle,rgba(0,255,136,0.18) 0%,transparent 70%);
+    animation:flashGreen 0.8s ease forwards;
+  `;
+  if(!document.getElementById('fg-style')){
+    const fs=document.createElement('style');
+    fs.id='fg-style';
+    fs.textContent='@keyframes flashGreen{0%{opacity:1}100%{opacity:0}}';
+    document.head.appendChild(fs);
+  }
+  document.body.appendChild(flash);
+  setTimeout(()=>flash.remove(),900);
+  // Show a fixed "SECURED" badge instead of timer
+  showSecuredBadge(z);
+}
+
+function showSecuredBadge(z){
+  const el=document.createElement('div');
+  el.style.cssText=`
+    position:fixed;left:50%;bottom:95px;transform:translateX(-50%);
+    z-index:350;pointer-events:none;
+    background:rgba(0,255,136,0.15);border:2px solid #00ff88;
+    border-radius:12px;padding:8px 20px;
+    font-family:monospace;font-size:13px;letter-spacing:2px;
+    color:#00ff88;text-transform:uppercase;text-shadow:0 0 10px rgba(0,255,136,0.7);
+    backdrop-filter:blur(8px);
+    animation:ztFadeIn 0.3s ease;
+    box-shadow:0 0 20px rgba(0,255,136,0.3);
+  `;
+  el.textContent='✅ SITE SECURED';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 2500);
 }
 
 setTimeout(()=>showSpeech(isMobile()?'Use joystick to move!':'Arrow keys to move!'),1200);
