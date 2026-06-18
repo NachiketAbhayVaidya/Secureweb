@@ -34,7 +34,7 @@
    Sky: warm peach-pink  |  Neons: coral, violet, amber
    ═══════════════════════════════════════════════════════ */
 body.light {
-  /* Neon accents shift to vivid daytime versions */
+  /* Neon accents shift to daytime versions */
   --neon-pink: #e8006e;
   --neon-pink-glow: rgba(232, 0, 110, 0.35);
   --neon-cyan: #0099cc;
@@ -50,10 +50,10 @@ body.light {
   /* Surfaces: translucent white-rose frosted glass */
   --surface: rgba(255, 245, 252, 0.88);
 
-  /* Borders: vivid hot-pink */
+  /* Borders: hot-pink */
   --border: rgba(232, 0, 110, 0.35);
 
-  /* Text: deep plum for legibility */
+  /* Text: deep plum */
   --text: #1e0535;
   --text2: #6b2486;
   --text3: #b07acc;
@@ -69,7 +69,7 @@ body.light {
   --nav-bg: rgba(242, 246, 250, 0.97);
 }
 
-/* Extra light-mode glow & colour overrides */
+/* Extra light-mode overrides */
 body.light .hud-name {
   color: #e8006e;
   text-shadow: 0 0 18px rgba(232,0,110,0.5), 0 0 40px rgba(232,0,110,0.25);
@@ -148,7 +148,7 @@ body.light .tm-card:hover {
   box-shadow: 0 12px 28px rgba(0,153,204,0.2);
 }
 body.light .tm-tag { color: #0099cc; }
-/* Team image wrapper — ensure image fills correctly */
+
 .tm-img-wrap img {
   width: 100%;
   height: 100%;
@@ -156,7 +156,6 @@ body.light .tm-tag { color: #0099cc; }
   object-position: top center;
   display: block;
 }
-/* Better fallback centering */
 .tm-fallback {
   width: 100%;
   height: 100%;
@@ -221,8 +220,6 @@ body.light #hudGrid {
     linear-gradient(rgba(232,0,110,0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(232,0,110,0.04) 1px, transparent 1px);
 }
-
-/* ── REST OF CSS (unchanged) ── */
 
 html, body {
   width: 100%;

@@ -4,13 +4,19 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="description" content="Abhedya Security Solutions — Explore our cyberpunk 3D infinite world and discover professional security services across residential, corporate, industrial and event sectors."/>
   <title>Abhedya Security Solutions</title>
   <link rel="stylesheet" href="style.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
 <body>
+
+  <!-- OVERLAY EFFECTS -->
+  <div id="scanlines"></div>
+  <div id="vignette"></div>
+  <div id="hudGrid"></div>
 
   <!-- LOADING -->
   <div id="loadingScreen">
@@ -18,7 +24,7 @@
       <div class="ls-logo">ABHEDYA</div>
       <div class="ls-sub">Security Solutions</div>
       <div class="ls-bar-wrap"><div class="ls-bar" id="lsBar"></div></div>
-      <div class="ls-hint" id="lsHint">Initializing world…</div>
+      <div class="ls-hint" id="lsHint">Generating world…</div>
     </div>
   </div>
 
@@ -84,9 +90,9 @@
       <h2 class="fp-title">Our <span>Services</span></h2>
       <div class="services-grid">
         <div class="sv-card"><span class="sv-icon">🏠</span><h3>Residential</h3><p>24/7 gate management, visitor logging and round-the-clock community safety for gated societies.</p></div>
-        <div class="sv-card"><span class="sv-icon">🏢</span><h3>Corporate & IT Parks</h3><p>Professional guards, RFID access systems and disciplined floor patrolling for offices.</p></div>
+        <div class="sv-card"><span class="sv-icon">🏢</span><h3>Corporate &amp; IT Parks</h3><p>Professional guards, RFID access systems and disciplined floor patrolling for offices.</p></div>
         <div class="sv-card"><span class="sv-icon">🏭</span><h3>Industrial Sites</h3><p>Perimeter security, shift guards and strict safety protocol enforcement for factories.</p></div>
-        <div class="sv-card"><span class="sv-icon">🎟</span><h3>Events & VIP</h3><p>Crowd management, VIP escorts and emergency response teams at large-scale events.</p></div>
+        <div class="sv-card"><span class="sv-icon">🎟</span><h3>Events &amp; VIP</h3><p>Crowd management, VIP escorts and emergency response teams at large-scale events.</p></div>
         <div class="sv-card"><span class="sv-icon">🧹</span><h3>Facility Management</h3><p>Housekeeping staffing and integrated facility operations support across premises.</p></div>
         <div class="sv-card"><span class="sv-icon">🚗</span><h3>Mobile Patrol</h3><p>Rapid response mobile units covering wider premises and multi-site properties on schedule.</p></div>
       </div>
@@ -113,7 +119,7 @@
             </div>
           </div>
           <div class="tm-info">
-            <span class="tm-tag">FOUNDER & CEO</span>
+            <span class="tm-tag">FOUNDER &amp; CEO</span>
             <h3>Ashutosh Gole</h3>
             <p>Built Abhedya on a vision to transform private security with armed forces values — discipline, vigilance, and uncompromising accountability.</p>
           </div>
@@ -131,7 +137,7 @@
             </div>
           </div>
           <div class="tm-info">
-            <span class="tm-tag">ADVISOR & MENTOR</span>
+            <span class="tm-tag">ADVISOR &amp; MENTOR</span>
             <h3>Col. Nikhil Gajjar</h3>
             <p>Decorated armed forces veteran bringing decades of strategic security expertise and military operational discipline to Abhedya.</p>
           </div>
@@ -143,7 +149,7 @@
             </div>
           </div>
           <div class="tm-info">
-            <span class="tm-tag">ADVISOR & MENTOR</span>
+            <span class="tm-tag">ADVISOR &amp; MENTOR</span>
             <h3>Col. Surojit Sinha (Retd.)</h3>
             <p>Retired Colonel with extensive experience in security operations, personnel training and national-level threat assessment protocols.</p>
           </div>
