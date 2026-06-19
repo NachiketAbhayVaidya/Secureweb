@@ -120,7 +120,7 @@ const DARK_COLORS = {
 };
 
 const LIGHT_COLORS = {
-  ground: 0x5a8a4a, gridA: 0x3f6a38, gridB: 0x355c30,
+  ground: 0x6b9457, gridA: 0x4a7340, gridB: 0x3f6638,
   hqMain: 0xb8b0a0, hqAccent: 0xa8a090, hqSide: 0xa0988a,
   corporate: 0x78889a, corporateTop: 0x687080, corpGlass: 0x6090c0,
   booth: 0xd8d0c0, fire: 0x6a6a62,
@@ -129,8 +129,8 @@ const LIGHT_COLORS = {
   factory: 0x80888a, chimney: 0x6a7070,
   trunk: 0x7a5230, treetop: 0x3a8228,
   treetop2: 0x478f34, treetop3: 0x2f7a26,
-  grassPatch: 0x4d8a3a, grassBlade: 0x5fa548, bush: 0x3d7a30,
-  neonPink: 0xe8006e, neonCyan: 0x0099cc, neonYellow: 0xf59e00
+  grassPatch: 0x5c9248, grassBlade: 0x6dac56, bush: 0x49823a,
+  neonPink: 0xd6005f, neonCyan: 0x0077a8, neonYellow: 0xc97a00
 };
 
 // ── MESH CREATION HELPERS ─────────────────────────────────────────────────────
@@ -292,7 +292,7 @@ function loadChunk(cx, cz) {
   chunkGrid.position.y = 0.01;
   chunkGrid.userData.isGrid = true;
   chunkGrid.material.transparent = true;
-  chunkGrid.material.opacity = isLight ? 0.18 : 0.55;
+  chunkGrid.material.opacity = isLight ? 0.32 : 0.55;
   group.add(chunkGrid);
 
   // 3. Road Network
@@ -853,13 +853,13 @@ function loadStaticStartingWorld(chunk, group) {
 
   // ── STATIC SECURING ZONES (Transferred to Chunk 0,0) ──
   const staticZones = [
-    { id: 'gate', label: '🚪 Gate Security', pos: [0, 0, 80], r: 10, icon: '🚪', tag: 'ENTRANCE CONTROL', title: 'Securing the <em>Gate</em>', text: 'Our guards maintain <strong>strict access control</strong> at every entry — visitor logging, vehicle checks, zero-tolerance entry.', list: ['✓ Visitor management', '✓ Vehicle checking', '✓ 24/7 manned entry'], night: false, walkie: true, torch: false, lc: 0xffffaa, li: 0.6 },
-    { id: 'hq', label: '🏛 Abhedya HQ', pos: [-20, 0, 50], r: 12, icon: '🛡️', tag: 'OUR FOUNDATION', title: 'What is <em>Abhedya</em>?', text: 'Abhedya means <strong>Impenetrable</strong>. Founded on armed forces values — discipline, vigilance, zero compromise.', list: ['✓ Background verified', '✓ Military supervisors', '✓ 24×7 command'], night: false, walkie: true, torch: false, lc: 0xD4AF37, li: 0.8 },
-    { id: 'fire', label: '🔥 Fire Zone', pos: [-20, 0, 20], r: 10, icon: '🔥', tag: 'EMERGENCY TRAINING', title: 'Fire & Emergency <em>Response</em>', text: 'Every guard is <strong>fire safety certified</strong>. Evacuation, extinguisher use, and first response — drilled to instinct.', list: ['✓ Fire extinguisher cert.', '✓ Evacuation drills', '✓ First aid trained'], night: true, walkie: false, torch: false, lc: 0xff5500, li: 1.3 },
-    { id: 'corporate', label: '🏢 Corporate Security', pos: [20, 0, -10], r: 12, icon: '🏢', tag: 'CORPORATE PATROL', title: 'Office & IT Park <em>Security</em>', text: 'Disciplined floor patrols, RFID access, and professional protocols for <strong>corporate campuses</strong> and IT parks.', list: ['✓ Access control', '✓ CCTV coordination', '✓ Visitor mgmt'], night: false, walkie: true, torch: false, lc: 0x4488ff, li: 0.5 },
-    { id: 'nightwatch', label: '🌙 Night Watch Tower', pos: [32, 0, -10], r: 10, icon: '🌙', tag: 'NIGHT SHIFT', title: 'On Guard <em>Through the Night</em>', text: 'Night guards carry torches, radios and <strong>heightened vigilance</strong>. Threats dont sleep — neither do we.', list: ['✓ Night patrol rotations', '✓ Intruder detection', '✓ Digital logs'], night: true, walkie: false, torch: true, lc: 0x44aaee, li: 0.7 },
-    { id: 'residential', label: '🏠 Residential', pos: [22, 0, -45], r: 12, icon: '🏠', tag: 'GATED COMMUNITIES', title: 'Protecting <em>Homes</em>', text: 'From gated societies to apartments — resident safety, vehicle entry and <strong>community watch patrols</strong>.', list: ['✓ Gate management', '✓ Resident verification', '✓ E-response patrols'],   night: false, walkie: true, torch: false, lc: 0x44dd88, li: 0.5 },
-    { id: 'industrial', label: '🏭 Industrial Zone', pos: [-20, 0, -70], r: 12, icon: '🏭', tag: 'INDUSTRIAL SECURITY', title: 'Factory & Plant <em>Protection</em>', text: '<strong>High-security perimeter control</strong> for plants — shift guards, asset tracking, safety enforcement.', list: ['✓ Perimeter surveillance', '✓ Asset protection', '✓ Shift deployment'], night: false, walkie: true, torch: false, lc: 0xff8800, li: 0.6 }
+    { id: 'gate', label: '🚪 Gate Security', pos: [0, 0, 80], r: 10, icon: '🚪', tag: 'ENTRANCE CONTROL', title: 'Securing the <em>Gate</em>', text: 'Our guards maintain <strong>strict access control</strong> at every entry — visitor logging, vehicle checks, zero-tolerance entry.', list: [' Visitor management', ' Vehicle checking', ' 24/7 manned entry'], night: false, walkie: true, torch: false, lc: 0xffffaa, li: 0.6 },
+    { id: 'hq', label: '🏛 Abhedya HQ', pos: [-20, 0, 50], r: 12, icon: '🛡️', tag: 'OUR FOUNDATION', title: 'What is <em>Abhedya</em>?', text: 'Abhedya means <strong>Impenetrable</strong>. Founded on armed forces values — discipline, vigilance, zero compromise.', list: [' Background verified', ' Military supervisors', ' 24×7 command'], night: false, walkie: true, torch: false, lc: 0xD4AF37, li: 0.8 },
+    { id: 'fire', label: '🔥 Fire Zone', pos: [-20, 0, 20], r: 10, icon: '🔥', tag: 'EMERGENCY TRAINING', title: 'Fire & Emergency <em>Response</em>', text: 'Every guard is <strong>fire safety certified</strong>. Evacuation, extinguisher use, and first response — drilled to instinct.', list: [' Fire extinguisher cert.', ' Evacuation drills', ' First aid trained'], night: true, walkie: false, torch: false, lc: 0xff5500, li: 1.3 },
+    { id: 'corporate', label: '🏢 Corporate Security', pos: [20, 0, -10], r: 12, icon: '🏢', tag: 'CORPORATE PATROL', title: 'Office & IT Park <em>Security</em>', text: 'Disciplined floor patrols, RFID access, and professional protocols for <strong>corporate campuses</strong> and IT parks.', list: [' Access control', ' CCTV coordination', ' Visitor mgmt'], night: false, walkie: true, torch: false, lc: 0x4488ff, li: 0.5 },
+    { id: 'nightwatch', label: '🌙 Night Watch Tower', pos: [32, 0, -10], r: 10, icon: '🌙', tag: 'NIGHT SHIFT', title: 'On Guard <em>Through the Night</em>', text: 'Night guards carry torches, radios and <strong>heightened vigilance</strong>. Threats dont sleep — neither do we.', list: [' Night patrol rotations', ' Intruder detection', ' Digital logs'], night: true, walkie: false, torch: true, lc: 0x44aaee, li: 0.7 },
+    { id: 'residential', label: '🏠 Residential', pos: [22, 0, -45], r: 12, icon: '🏠', tag: 'GATED COMMUNITIES', title: 'Protecting <em>Homes</em>', text: 'From gated societies to apartments — resident safety, vehicle entry and <strong>community watch patrols</strong>.', list: [' Gate management', ' Resident verification', ' E-response patrols'],   night: false, walkie: true, torch: false, lc: 0x44dd88, li: 0.5 },
+    { id: 'industrial', label: '🏭 Industrial Zone', pos: [-20, 0, -70], r: 12, icon: '🏭', tag: 'INDUSTRIAL SECURITY', title: 'Factory & Plant <em>Protection</em>', text: '<strong>High-security perimeter control</strong> for plants — shift guards, asset tracking, safety enforcement.', list: [' Perimeter surveillance', ' Asset protection', ' Shift deployment'], night: false, walkie: true, torch: false, lc: 0xff8800, li: 0.6 }
   ];
 
   staticZones.forEach(z => {
@@ -890,13 +890,19 @@ function loadStaticStartingWorld(chunk, group) {
   });
 
   // Spawn Stationary Guards for Static Buildings
-  spawnStationaryGuard(group, 0, GZ + 3, Math.PI, chunk.guards);       // Gate
   spawnStationaryGuard(group, HX, HZ + 5.5, Math.PI, chunk.guards);   // HQ
   spawnStationaryGuard(group, FX, FZ + 6.5, Math.PI, chunk.guards);   // Fire Zone
   spawnStationaryGuard(group, CX, CZ - 5.5, 0, chunk.guards);         // Corp
   spawnStationaryGuard(group, NX, NZ - 3, 0, chunk.guards);           // Tower
   spawnStationaryGuard(group, 21, RZ + 4, 0, chunk.guards);           // Residential
   spawnStationaryGuard(group, IX, IZ + 10.5, 0, chunk.guards);        // Industrial
+
+  // ── DISTANT SKYLINE — fills the horizon around the starting chunk so it
+  // never reads as a flat empty plane, in either light or dark theme. Kept
+  // well outside the 100x100 playable footprint (roads run to ±100) so it
+  // never blocks movement or gate views; it's a backdrop only.
+  const skylineRng = new SeededRandom(909090);
+  spawnSkylineBackdrop(group, skylineRng, 26, 95, 170);
 }
 
 // ── PROCEDURAL CHUNK WORLD GENERATOR ──────────────────────────────────────────
@@ -972,7 +978,7 @@ function loadProceduralChunkWorld(chunk, group, cx, cz, centerX, centerZ) {
         tag: `SECTOR PATROL`,
         title: `Sector Outpost <em>${cx},${cz}</em>`,
         text: `${zDesc} Patrol this procedural quadrant.`,
-        list: ['✓ Scan security nodes', '✓ Verify gate lockups', '✓ Audit access codes'],
+        list: [' Scan security nodes', ' Verify gate lockups', ' Audit access codes'],
         night: rng.next() > 0.5,
         walkie: true,
         torch: false,
@@ -1040,6 +1046,80 @@ function loadProceduralChunkWorld(chunk, group, cx, cz, centerX, centerZ) {
       }
     }
   });
+
+  // ── DISTANT SKYLINE — a sparse backdrop ring near the chunk's outer edge
+  // (chunk is 200 units wide) so the horizon stays filled in as the player
+  // roams outward, without crowding the playable quadrant footprints.
+  spawnSkylineBackdrop(group, rng, 8, 92, 99);
+}
+
+// ── DISTANT SKYLINE SPAWNER ──────────────────────────────────────────────────
+// Purely decorative, non-collidable background buildings used to fill the
+// horizon so the world doesn't read as a flat, empty plane — especially
+// noticeable in bright light mode where fog used to erase everything past
+// a short distance. These are cheap boxes with no shadow-casting to keep
+// frame rate steady even when many are on screen at once.
+function spawnSkylineBuilding(group, px, pz, rng) {
+  const width  = rng.range(7, 13);
+  const depth  = rng.range(7, 13);
+  const height = rng.range(14, 46);
+  const colorSet = rng.choice([
+    [DARK_COLORS.tower, LIGHT_COLORS.tower],
+    [DARK_COLORS.corporate, LIGHT_COLORS.corporate],
+    [DARK_COLORS.hqSide, LIGHT_COLORS.hqSide],
+    [DARK_COLORS.factory, LIGHT_COLORS.factory]
+  ]);
+  const col = isLight ? colorSet[1] : colorSet[0];
+
+  const mat = new THREE.MeshLambertMaterial({ color: col });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), mat);
+  body.position.set(px, height / 2, pz);
+  body.castShadow = false;
+  body.receiveShadow = false;
+  body.userData.originalColor = isLight ? colorSet[0] : colorSet[0];
+  body.userData.skylineDark = colorSet[0];
+  body.userData.skylineLight = colorSet[1];
+  group.add(body);
+
+  // Cap / roof block for a bit of silhouette variety
+  const capMat = new THREE.MeshLambertMaterial({ color: col });
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(width * 0.6, height * 0.08, depth * 0.6), capMat);
+  cap.position.set(px, height + height * 0.04, pz);
+  cap.userData.skylineDark = colorSet[0];
+  cap.userData.skylineLight = colorSet[1];
+  group.add(cap);
+
+  // Sprinkle a few lit window squares so it isn't a flat silhouette
+  const winCols = Math.max(2, Math.floor(width / 2.6));
+  const winRows = Math.max(2, Math.floor(height / 4));
+  const winMat = new THREE.MeshBasicMaterial({ color: 0xffe8a0, transparent: true, opacity: isLight ? 0.35 : 0.75 });
+  for (let r = 0; r < winRows; r++) {
+    for (let c = 0; c < winCols; c++) {
+      if (rng.next() < 0.55) continue; // sparse, irregular windows
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), winMat.clone());
+      const wx = px - width / 2 + (c + 0.5) * (width / winCols);
+      const wy = 2 + r * (height / winRows);
+      win.position.set(wx, wy, pz + depth / 2 + 0.02);
+      win.userData.isSkylineWindow = true;
+      group.add(win);
+    }
+  }
+
+  return body;
+}
+
+// Scatters a ring/backdrop of distant skyline buildings around a chunk
+// center, kept outside the playable footprint (radius >= minR) so they
+// never block roads, gates or guard posts — just fill the horizon behind
+// everything else.
+function spawnSkylineBackdrop(group, rng, count, minR, maxR) {
+  for (let i = 0; i < count; i++) {
+    const ang = rng.range(0, Math.PI * 2);
+    const dist = rng.range(minR, maxR);
+    const px = Math.cos(ang) * dist;
+    const pz = Math.sin(ang) * dist;
+    spawnSkylineBuilding(group, px, pz, rng);
+  }
 }
 
 // ── PROCEDURAL BUILDING TYPES ────────────────────────────────────────────────
@@ -1601,12 +1681,12 @@ document.getElementById('contactForm').addEventListener('submit', async e => {
   try {
     if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
-      status.textContent = '✓ Message sent! We will contact you within 24 hours.';
+      status.textContent = ' Message sent! We will contact you within 24 hours.';
       status.className = 'form-status success'; e.target.reset();
     } else {
       const msg = encodeURIComponent(`Hello Abhedya Security!\n\nName: ${name}\nPhone: ${phone}\nEmail: ${email || 'N/A'}\nService: ${service || 'N/A'}\nMessage: ${message}`);
       window.open(`https://wa.me/917666793286?text=${msg}`, '_blank');
-      status.textContent = '✓ Redirected to WhatsApp with your details!';
+      status.textContent = ' Redirected to WhatsApp with your details!';
       status.className = 'form-status success'; e.target.reset();
     }
   } catch (err) {
@@ -1620,13 +1700,13 @@ let isLight = false;
 
 function applyTheme(light) {
   isLight = light;
-  // Softer, slightly muted sky-blue instead of a saturated postcard blue —
-  // reads as natural daylight instead of blowing out against white buildings.
-  const skyCol = light ? 0xb9d4e8 : 0x0f1f38;
+  // Crisp, slightly desaturated daytime sky-blue — avoids the hazy pink/lilac
+  // cast and keeps distant buildings readable instead of fog-washed white.
+  const skyCol = light ? 0x9fc3e0 : 0x0f1f38;
   renderer.setClearColor(skyCol);
-  scene.fog.color.set(light ? 0xc5dceb : 0x0f1f38);
-  scene.fog.near = light ? 45 : 55;
-  scene.fog.far = light ? 220 : 200;
+  scene.fog.color.set(light ? 0xaed0ea : 0x0f1f38);
+  scene.fog.near = light ? 70 : 55;
+  scene.fog.far = light ? 280 : 200;
 
   // Sky objects
   stars.visible = !light;
@@ -1635,10 +1715,10 @@ function applyTheme(light) {
 
   // Lights — tuned down from their original blown-out values so daytime
   // keeps visible shading/contrast instead of flattening to white.
-  ambient.color.set(light ? 0xf3f1ec : 0x223355);
-  ambient.intensity = light ? 0.9 : 0.8;
+  ambient.color.set(light ? 0xeef2f6 : 0x223355);
+  ambient.intensity = light ? 0.75 : 0.8;
   sun.color.set(light ? 0xfff4e0 : 0xfff5e0);
-  sun.intensity = light ? 1.35 : 1.2;
+  sun.intensity = light ? 1.5 : 1.2;
   moonLight.intensity = light ? 0 : 0.6;
 
   // Flashlight visibility
@@ -1661,6 +1741,13 @@ function applyTheme(light) {
 
 function updateMeshColorForTheme(mesh, light) {
   if (!mesh.material || !mesh.material.color) return;
+
+  // Decorative skyline buildings carry explicit dark/light hex pairs since
+  // they're chosen randomly from a palette rather than a single fixed color.
+  if (mesh.userData.skylineDark !== undefined) {
+    mesh.material.color.setHex(light ? mesh.userData.skylineLight : mesh.userData.skylineDark);
+    return;
+  }
 
   if (mesh.userData.originalColor === undefined) {
     mesh.userData.originalColor = mesh.material.color.getHex();
@@ -1710,17 +1797,20 @@ function applyThemeToGroup(group, light) {
   group.traverse(child => {
     if (child.isMesh) {
       updateMeshColorForTheme(child, light);
+      if (child.userData.isSkylineWindow && child.material) {
+        child.material.opacity = light ? 0.35 : 0.75;
+      }
     } else if (child.isLineSegments && child.userData.isGrid) {
       const mat = child.material;
       const cA = light ? LIGHT_COLORS.gridA : DARK_COLORS.gridA;
       const cB = light ? LIGHT_COLORS.gridB : DARK_COLORS.gridB;
       if (Array.isArray(mat)) {
         mat[0].color.set(cA); mat[1].color.set(cB);
-        mat.forEach(m => { m.transparent = true; m.opacity = light ? 0.18 : 0.55; });
+        mat.forEach(m => { m.transparent = true; m.opacity = light ? 0.32 : 0.55; });
       } else if (mat) {
         mat.color.set(cA);
         mat.transparent = true;
-        mat.opacity = light ? 0.18 : 0.55;
+        mat.opacity = light ? 0.32 : 0.55;
       }
     } else if (child.isPointLight || child.isSpotLight) {
       // Don't switch global spotlights / player pointlights
