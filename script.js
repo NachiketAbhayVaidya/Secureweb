@@ -59,6 +59,10 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setClearColor(0x0f1f38);
+// Filmic tone mapping keeps bright daylight from washing out to flat white
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x0f1f38, 55, 200);
@@ -110,11 +114,13 @@ const DARK_COLORS = {
   house: 0x1e2e40, roof: 0x3a1a10,
   factory: 0x182028, chimney: 0x1e2a38,
   trunk: 0x4a3520, treetop: 0x0e3018,
+  treetop2: 0x123a1c, treetop3: 0x0a2814,
+  grassPatch: 0x143420, grassBlade: 0x1c4a28, bush: 0x103420,
   neonPink: 0xff2e93, neonCyan: 0x00f0ff, neonYellow: 0xffd200
 };
 
 const LIGHT_COLORS = {
-  ground: 0x5a8a4a, gridA: 0x4a7a3a, gridB: 0x3d6830,
+  ground: 0x5a8a4a, gridA: 0x3f6a38, gridB: 0x355c30,
   hqMain: 0xb8b0a0, hqAccent: 0xa8a090, hqSide: 0xa0988a,
   corporate: 0x78889a, corporateTop: 0x687080, corpGlass: 0x6090c0,
   booth: 0xd8d0c0, fire: 0x6a6a62,
@@ -122,6 +128,8 @@ const LIGHT_COLORS = {
   house: 0xc8aa80, roof: 0x8a3020,
   factory: 0x80888a, chimney: 0x6a7070,
   trunk: 0x7a5230, treetop: 0x3a8228,
+  treetop2: 0x478f34, treetop3: 0x2f7a26,
+  grassPatch: 0x4d8a3a, grassBlade: 0x5fa548, bush: 0x3d7a30,
   neonPink: 0xe8006e, neonCyan: 0x0099cc, neonYellow: 0xf59e00
 };
 
@@ -176,10 +184,6 @@ scene.add(stars);
 const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(2.5, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfff5c0 }));
 moonMesh.position.set(-50, 60, -80);
 scene.add(moonMesh);
-
-const haloMesh = new THREE.Mesh(new THREE.RingGeometry(3, 5, 32), new THREE.MeshBasicMaterial({ color: 0xfff5c0, transparent: true, opacity: 0.08, side: THREE.DoubleSide }));
-haloMesh.position.copy(moonMesh.position);
-scene.add(haloMesh);
 
 const sunSphere = new THREE.Mesh(new THREE.SphereGeometry(2.5, 12, 12), new THREE.MeshBasicMaterial({ color: 0xfffaaa }));
 sunSphere.position.set(50, 65, -70);
@@ -278,7 +282,8 @@ function loadChunk(cx, cz) {
   chunkGround.userData.originalColor = DARK_COLORS.ground;
   group.add(chunkGround);
 
-  // 2. Neon Matrix Grid lines
+  // 2. Faint ground grid — kept subtle so it reads as a soft lawn/pavement
+  // pattern rather than a harsh CAD grid, especially in bright daylight.
   const chunkGrid = new THREE.GridHelper(
     chunkSize, 20,
     isLight ? LIGHT_COLORS.gridA : DARK_COLORS.gridA,
@@ -286,6 +291,8 @@ function loadChunk(cx, cz) {
   );
   chunkGrid.position.y = 0.01;
   chunkGrid.userData.isGrid = true;
+  chunkGrid.material.transparent = true;
+  chunkGrid.material.opacity = isLight ? 0.18 : 0.55;
   group.add(chunkGrid);
 
   // 3. Road Network
@@ -442,6 +449,155 @@ function spawnStreetLamp(group, lx, lz, alignX) {
   const light = new THREE.PointLight(0xffe8a0, 0.8, 15);
   light.position.set(blx, 4.8, blz);
   group.add(light);
+}
+
+// ── REALISTIC TREE SPAWNER ────────────────────────────────────────────────────
+// Builds a natural-looking tree with a tapered trunk, a few branches and
+// layered, irregular foliage clumps so it reads as a real tree rather than
+// a single lollipop sphere. Adds a slim collider so the player can't walk
+// through the trunk. Returns the tree group.
+function spawnTree(group, tx, tz, chunkColliders, opts = {}) {
+  const rng = opts.rng || null;
+  const rnd = (a, b) => rng ? rng.range(a, b) : (a + Math.random() * (b - a));
+
+  const scale = opts.scale || rnd(0.85, 1.35);
+  const trunkH = 2.6 * scale;
+  const tree = new THREE.Group();
+  tree.position.set(tx, 0, tz);
+  group.add(tree);
+
+  // Tapered trunk (two stacked cylinders for a natural narrowing taper)
+  const trunkLower = createCylinder(0.16 * scale, 0.24 * scale, trunkH * 0.65, 6, DARK_COLORS.trunk, 0, trunkH * 0.325, 0, tree);
+  const trunkUpper = createCylinder(0.1 * scale, 0.17 * scale, trunkH * 0.4, 6, DARK_COLORS.trunk, 0, trunkH * 0.65 + trunkH * 0.2, 0, tree);
+  trunkLower.rotation.y = rnd(0, Math.PI * 2);
+  trunkUpper.rotation.y = rnd(0, Math.PI * 2);
+
+  // A couple of small angled branches breaking the silhouette
+  const branchCount = 2;
+  for (let b = 0; b < branchCount; b++) {
+    const ang = rnd(0, Math.PI * 2);
+    const branch = createCylinder(0.05 * scale, 0.08 * scale, 0.9 * scale, 5, DARK_COLORS.trunk, 0, 0, 0, tree);
+    branch.position.set(Math.cos(ang) * 0.18 * scale, trunkH * 0.62, Math.sin(ang) * 0.18 * scale);
+    branch.rotation.z = Math.cos(ang) * 0.9;
+    branch.rotation.x = Math.sin(ang) * 0.9;
+  }
+
+  // Layered foliage — three offset, irregularly-sized clumps using slightly
+  // different greens (and low-poly icosahedrons instead of spheres) so the
+  // canopy looks organic rather than a perfect ball.
+  const foliageColors = [DARK_COLORS.treetop, DARK_COLORS.treetop2, DARK_COLORS.treetop3];
+  const clumpCount = 3 + (rng ? Math.floor(rng.next() * 2) : Math.floor(Math.random() * 2));
+  for (let c = 0; c < clumpCount; c++) {
+    const r = rnd(0.85, 1.25) * scale;
+    const ang = rnd(0, Math.PI * 2);
+    const dist = c === 0 ? 0 : rnd(0.25, 0.55) * scale;
+    const fx = Math.cos(ang) * dist;
+    const fz = Math.sin(ang) * dist;
+    const fy = trunkH + rnd(0.3, 0.85) * scale - (c === 0 ? 0 : 0.2);
+    const col = foliageColors[c % foliageColors.length];
+    const clump = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(r, 0),
+      new THREE.MeshLambertMaterial({ color: col })
+    );
+    clump.position.set(fx, fy, fz);
+    clump.rotation.set(rnd(0, Math.PI), rnd(0, Math.PI), rnd(0, Math.PI));
+    clump.castShadow = true;
+    clump.receiveShadow = true;
+    clump.userData.originalColor = col;
+    tree.add(clump);
+  }
+
+  if (chunkColliders) {
+    const cr = 0.28 * scale;
+    chunkColliders.push(new THREE.Box3(
+      new THREE.Vector3(tx - cr, 0, tz - cr),
+      new THREE.Vector3(tx + cr, trunkH + 1.2, tz + cr)
+    ));
+  }
+
+  return tree;
+}
+
+// ── BUSH / SHRUB SPAWNER ──────────────────────────────────────────────────────
+function spawnBush(group, bx, bz, rng) {
+  const rnd = (a, b) => rng ? rng.range(a, b) : (a + Math.random() * (b - a));
+  const scale = rnd(0.5, 0.9);
+  const bush = new THREE.Group();
+  bush.position.set(bx, 0, bz);
+  group.add(bush);
+
+  const lumps = 2 + Math.round(rnd(0, 1));
+  for (let i = 0; i < lumps; i++) {
+    const r = rnd(0.35, 0.55) * scale;
+    const ang = rnd(0, Math.PI * 2);
+    const dist = i === 0 ? 0 : rnd(0.2, 0.4) * scale;
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), new THREE.MeshLambertMaterial({ color: DARK_COLORS.bush }));
+    m.position.set(Math.cos(ang) * dist, r * 0.85, Math.sin(ang) * dist);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    m.userData.originalColor = DARK_COLORS.bush;
+    bush.add(m);
+  }
+  return bush;
+}
+
+// ── GRASS PATCH SPAWNER ───────────────────────────────────────────────────────
+// Scatters thin double-sided blade quads over a roughly circular patch using
+// a low-cost merged BufferGeometry so large numbers of blades stay cheap,
+// plus a soft tinted ground disc beneath them for a richer turf base.
+function spawnGrassPatch(group, gx, gz, radius, density, rng) {
+  const rnd = (a, b) => rng ? rng.range(a, b) : (a + Math.random() * (b - a));
+
+  // Soft turf disc under the blades
+  const disc = new THREE.Mesh(
+    new THREE.CircleGeometry(radius, 10),
+    new THREE.MeshLambertMaterial({ color: DARK_COLORS.grassPatch })
+  );
+  disc.rotation.x = -Math.PI / 2;
+  disc.position.set(gx, 0.012, gz);
+  disc.receiveShadow = true;
+  disc.userData.originalColor = DARK_COLORS.grassPatch;
+  group.add(disc);
+
+  // Merge many thin blade quads into one BufferGeometry for performance
+  const bladeCount = density;
+  const positions = [];
+  const indices = [];
+  let vi = 0;
+  for (let i = 0; i < bladeCount; i++) {
+    const ang = rnd(0, Math.PI * 2);
+    const dist = Math.sqrt(rnd(0, 1)) * radius;
+    const cx = Math.cos(ang) * dist;
+    const cz = Math.sin(ang) * dist;
+    const h = rnd(0.18, 0.4);
+    const w = rnd(0.05, 0.09);
+    const rot = rnd(0, Math.PI);
+    const dx = Math.cos(rot) * w / 2;
+    const dz = Math.sin(rot) * w / 2;
+    const lean = rnd(-0.06, 0.06);
+
+    // base-left, base-right, tip (single triangle blade)
+    positions.push(cx - dx, 0, cz - dz);
+    positions.push(cx + dx, 0, cz + dz);
+    positions.push(cx + lean, h, cz + lean);
+
+    indices.push(vi, vi + 1, vi + 2);
+    vi += 3;
+  }
+
+  const bladeGeo = new THREE.BufferGeometry();
+  bladeGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  bladeGeo.setIndex(indices);
+  bladeGeo.computeVertexNormals();
+
+  const bladeMat = new THREE.MeshLambertMaterial({ color: DARK_COLORS.grassBlade, side: THREE.DoubleSide });
+  const blades = new THREE.Mesh(bladeGeo, bladeMat);
+  blades.position.set(gx, 0.015, gz);
+  blades.userData.originalColor = DARK_COLORS.grassBlade;
+  blades.userData.isGrassBlades = true;
+  group.add(blades);
+
+  return { disc, blades };
 }
 
 // ── STATIC STARTING WORLD (CHUNK 0,0) ─────────────────────────────────────────
@@ -659,19 +815,41 @@ function loadStaticStartingWorld(chunk, group) {
   chunk.colliders.push(new THREE.Box3(new THREE.Vector3(IX - 8.5, 0, IZ - 6.5), new THREE.Vector3(IX + 8.5, 12, IZ + 10)));
 
   // ── TREES ALONG MAIN NS ROAD ──
-  [-60, -40, -20, 20, 40, 60].forEach(tz => {
-    [-9.5, 9.5].forEach(tx => {
-      // Trunk
-      createCylinder(0.18, 0.22, 3, 6, 0x4a3520, tx, 1.5, tz, group);
-      // Leaves top
-      const top = new THREE.Mesh(new THREE.SphereGeometry(1.2, 8, 6), new THREE.MeshLambertMaterial({ color: 0x0e3018 }));
-      top.position.set(tx, 3.8, tz);
-      top.castShadow = true;
-      top.userData.originalColor = 0x0e3018;
-      group.add(top);
-      chunk.colliders.push(new THREE.Box3(new THREE.Vector3(tx - 0.5, 0, tz - 0.5), new THREE.Vector3(tx + 0.5, 5, tz + 0.5)));
+  [-65, -50, -35, -20, -5, 5, 20, 35, 50, 65].forEach(tz => {
+    if (Math.abs(tz) < 10) return; // keep gate area clear
+    [-11.5, 11.5].forEach(tx => {
+      spawnTree(group, tx + (Math.random() - 0.5) * 1.5, tz + (Math.random() - 0.5) * 4, chunk.colliders);
     });
   });
+
+  // ── TREES ALONG MAIN EW ROAD ──
+  [-65, -50, -35, 35, 50, 65].forEach(tx => {
+    [-11.5, 11.5].forEach(tz => {
+      spawnTree(group, tx + (Math.random() - 0.5) * 4, tz + (Math.random() - 0.5) * 1.5, chunk.colliders);
+    });
+  });
+
+  // ── GRASS & SHRUBS — soften building perimeters with real-world greenery ──
+  const grassSpots = [
+    [HX + 9, HZ - 3, 4.5, 70],   // beside HQ tower
+    [HX - 11, HZ + 3, 4, 60],    // HQ flank
+    [CX + 9, CZ + 4, 4.5, 70],   // beside corporate tower
+    [CX - 9, CZ - 3, 4, 55],     // corporate flank
+    [21, RZ + 7, 6, 90],         // residential front lawn
+    [29, RZ - 6, 5, 70],         // residential side
+    [IX + 10, IZ + 4, 4.5, 60],  // industrial fringe
+    [14, GZ + 4, 4, 55],         // near guard booth
+    [NX + 4, NZ + 5, 4, 55],     // around watchtower
+  ];
+  grassSpots.forEach(([gx, gz, r, density]) => spawnGrassPatch(group, gx, gz, r, density));
+
+  // Scattered shrubs dotted near pathways and building corners
+  const bushSpots = [
+    [HX + 6, HZ + 6], [HX - 6, HZ - 6], [CX + 6, CZ + 6], [CX - 6, CZ - 5],
+    [18, RZ + 4], [27, RZ - 1], [IX + 9, IZ - 2], [IX - 9, IZ + 8],
+    [3, GZ - 3], [-3, GZ - 3], [NX - 4, NZ + 4]
+  ];
+  bushSpots.forEach(([bx, bz]) => spawnBush(group, bx, bz));
 
   // ── STATIC SECURING ZONES (Transferred to Chunk 0,0) ──
   const staticZones = [
@@ -686,12 +864,6 @@ function loadStaticStartingWorld(chunk, group) {
 
   staticZones.forEach(z => {
     z.position = new THREE.Vector3(...z.pos);
-    // Ring base
-    const ring = new THREE.Mesh(new THREE.RingGeometry(z.r - 0.2, z.r, 32), new THREE.MeshBasicMaterial({ color: z.lc, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.set(z.pos[0], 0.05, z.pos[2]);
-    group.add(ring);
-    z.ring = ring;
 
     // Glowing pillar zone light
     const zl = new THREE.PointLight(z.lc, z.li, 15);
@@ -809,13 +981,6 @@ function loadProceduralChunkWorld(chunk, group, cx, cz, centerX, centerZ) {
         position: new THREE.Vector3(gx, 0, gz)
       };
 
-      // Zone Ring
-      const ring = new THREE.Mesh(new THREE.RingGeometry(pZone.r - 0.2, pZone.r, 32), new THREE.MeshBasicMaterial({ color: pZone.lc, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.set(q.gx, 0.05, q.gz);
-      group.add(ring);
-      pZone.ring = ring;
-
       // Zone Light
       const zl = new THREE.PointLight(pZone.lc, pZone.li, 15);
       zl.position.set(q.gx, 6, q.gz);
@@ -838,6 +1003,41 @@ function loadProceduralChunkWorld(chunk, group, cx, cz, centerX, centerZ) {
       pZone.sprite = sprite;
 
       chunk.zones.push(pZone);
+
+      // ── GREENERY around this building quadrant ──
+      // A grass lawn skirting the building base, a few scattered trees
+      // around its perimeter, and a couple of low shrubs near the entrance.
+      const lawnDX = q.bx > 0 ? -1 : 1;
+      const lawnDZ = q.bz > 0 ? -1 : 1;
+      spawnGrassPatch(group, q.bx + lawnDX * 11, q.bz + lawnDZ * 11, 6, 70, rng);
+
+      const treesAround = 2 + Math.floor(rng.next() * 2);
+      for (let t = 0; t < treesAround; t++) {
+        const ang = rng.range(0, Math.PI * 2);
+        const dist = rng.range(13, 18);
+        spawnTree(group, q.bx + Math.cos(ang) * dist, q.bz + Math.sin(ang) * dist, chunk.colliders, { rng });
+      }
+
+      const bushAng = rng.range(0, Math.PI * 2);
+      spawnBush(group, q.bx + Math.cos(bushAng) * 9, q.bz + Math.sin(bushAng) * 9, rng);
+      spawnBush(group, q.bx + Math.cos(bushAng + 1) * 9.5, q.bz + Math.sin(bushAng + 1) * 9.5, rng);
+    } else {
+      // ── EMPTY QUADRANT — turn it into a small green patch / mini park ──
+      if (rng.next() < 0.7) {
+        spawnGrassPatch(group, q.bx, q.bz, rng.range(8, 13), 110, rng);
+        const wildTrees = 3 + Math.floor(rng.next() * 4);
+        for (let t = 0; t < wildTrees; t++) {
+          const ang = rng.range(0, Math.PI * 2);
+          const dist = rng.range(2, 16);
+          spawnTree(group, q.bx + Math.cos(ang) * dist, q.bz + Math.sin(ang) * dist, chunk.colliders, { rng });
+        }
+        const wildBushes = 1 + Math.floor(rng.next() * 3);
+        for (let b = 0; b < wildBushes; b++) {
+          const ang = rng.range(0, Math.PI * 2);
+          const dist = rng.range(2, 14);
+          spawnBush(group, q.bx + Math.cos(ang) * dist, q.bz + Math.sin(ang) * dist, rng);
+        }
+      }
     }
   });
 }
@@ -1420,23 +1620,25 @@ let isLight = false;
 
 function applyTheme(light) {
   isLight = light;
-  const skyCol = light ? 0x87ceeb : 0x0f1f38;
+  // Softer, slightly muted sky-blue instead of a saturated postcard blue —
+  // reads as natural daylight instead of blowing out against white buildings.
+  const skyCol = light ? 0xb9d4e8 : 0x0f1f38;
   renderer.setClearColor(skyCol);
-  scene.fog.color.set(light ? 0xa8d8ea : 0x0f1f38);
-  scene.fog.near = light ? 60 : 55;
-  scene.fog.far = light ? 250 : 200;
+  scene.fog.color.set(light ? 0xc5dceb : 0x0f1f38);
+  scene.fog.near = light ? 45 : 55;
+  scene.fog.far = light ? 220 : 200;
 
   // Sky objects
   stars.visible = !light;
   moonMesh.visible = !light;
-  haloMesh.visible = !light;
   sunSphere.visible = light;
 
-  // Lights
-  ambient.color.set(light ? 0xfff8f0 : 0x223355);
-  ambient.intensity = light ? 1.8 : 0.8;
+  // Lights — tuned down from their original blown-out values so daytime
+  // keeps visible shading/contrast instead of flattening to white.
+  ambient.color.set(light ? 0xf3f1ec : 0x223355);
+  ambient.intensity = light ? 0.9 : 0.8;
   sun.color.set(light ? 0xfff4e0 : 0xfff5e0);
-  sun.intensity = light ? 2.2 : 1.2;
+  sun.intensity = light ? 1.35 : 1.2;
   moonLight.intensity = light ? 0 : 0.6;
 
   // Flashlight visibility
@@ -1487,6 +1689,11 @@ function updateMeshColorForTheme(mesh, light) {
     [DARK_COLORS.chimney]: LIGHT_COLORS.chimney,
     [DARK_COLORS.trunk]: LIGHT_COLORS.trunk,
     [DARK_COLORS.treetop]: LIGHT_COLORS.treetop,
+    [DARK_COLORS.treetop2]: LIGHT_COLORS.treetop2,
+    [DARK_COLORS.treetop3]: LIGHT_COLORS.treetop3,
+    [DARK_COLORS.grassPatch]: LIGHT_COLORS.grassPatch,
+    [DARK_COLORS.grassBlade]: LIGHT_COLORS.grassBlade,
+    [DARK_COLORS.bush]: LIGHT_COLORS.bush,
     [DARK_COLORS.neonPink]: LIGHT_COLORS.neonPink,
     [DARK_COLORS.neonCyan]: LIGHT_COLORS.neonCyan,
     [DARK_COLORS.neonYellow]: LIGHT_COLORS.neonYellow,
@@ -1509,8 +1716,11 @@ function applyThemeToGroup(group, light) {
       const cB = light ? LIGHT_COLORS.gridB : DARK_COLORS.gridB;
       if (Array.isArray(mat)) {
         mat[0].color.set(cA); mat[1].color.set(cB);
+        mat.forEach(m => { m.transparent = true; m.opacity = light ? 0.18 : 0.55; });
       } else if (mat) {
         mat.color.set(cA);
+        mat.transparent = true;
+        mat.opacity = light ? 0.18 : 0.55;
       }
     } else if (child.isPointLight || child.isSpotLight) {
       // Don't switch global spotlights / player pointlights
@@ -1589,7 +1799,7 @@ function completeZoneTimer() {
 function showSecuredBadge(z) {
   const el = document.createElement('div');
   el.style.cssText = 'position:fixed;left:50%;bottom:95px;transform:translateX(-50%);z-index:350;pointer-events:none;background:rgba(0,255,136,0.15);border:2px solid #00ff88;border-radius:12px;padding:8px 20px;font-family:monospace;font-size:13px;letter-spacing:2px;color:#00ff88;text-transform:uppercase;text-shadow:0 0 10px rgba(0,255,136,0.7);backdrop-filter:blur(8px);animation:ztFadeIn 0.3s ease;box-shadow:0 0 20px rgba(0,255,136,0.3);';
-  el.textContent = '✅ SITE SECURED';
+  el.textContent = ' SITE SECURED';
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2500);
 }
@@ -1800,7 +2010,6 @@ function animate() {
 
   // 14. Sky rotations
   moonMesh.rotation.y += 0.0008;
-  haloMesh.rotation.z += 0.001;
 
   // 15. Render minimap & viewport
   if (frameN % 3 === 0) drawMiniMap();
@@ -1809,7 +2018,7 @@ function animate() {
 
 // ── INITIALIZE WORLD ──────────────────────────────────────────────────────────
 updateChunks(0, 90);
-setTimeout(() => showSpeech(isMobile() ? 'Waddle to the gate! 🚪' : 'Walk to the gate! ⬆'), 2000);
+setTimeout(() => showSpeech(isMobile() ? 'Waddle to the gate! ' : 'Walk to the gate! '), 2000);
 animate();
 
 } catch (err) {
