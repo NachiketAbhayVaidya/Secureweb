@@ -890,12 +890,15 @@ function loadStaticStartingWorld(chunk, group) {
   });
 
   // Spawn Stationary Guards for Static Buildings
-  spawnStationaryGuard(group, HX, HZ + 5.5, Math.PI, chunk.guards);   // HQ
-  spawnStationaryGuard(group, FX, FZ + 6.5, Math.PI, chunk.guards);   // Fire Zone
-  spawnStationaryGuard(group, CX, CZ - 5.5, 0, chunk.guards);         // Corp
-  spawnStationaryGuard(group, NX, NZ - 3, 0, chunk.guards);           // Tower
-  spawnStationaryGuard(group, 21, RZ + 4, 0, chunk.guards);           // Residential
-  spawnStationaryGuard(group, IX, IZ + 10.5, 0, chunk.guards);        // Industrial
+  spawnGuardPair(group, HX, HZ + 5.5, Math.PI, chunk.guards);   // HQ
+  spawnGuardPair(group, FX, FZ + 6.5, Math.PI, chunk.guards);   // Fire Zone
+  spawnGuardPair(group, CX, CZ - 5.5, 0, chunk.guards);         // Corp
+  spawnGuardPair(group, NX, NZ - 3, 0, chunk.guards);           // Tower
+  spawnGuardPair(group, 21, RZ + 4, 0, chunk.guards);           // Residential
+  spawnGuardPair(group, IX, IZ + 10.5, 0, chunk.guards);        // Industrial
+
+  // Main gate — didn't have a guard before, adding a pair here too
+  spawnGuardPair(group, 0, GZ + 3, 0, chunk.guards);      // Industrial
 
   // ── DISTANT SKYLINE — fills the horizon around the starting chunk so it
   // never reads as a flat empty plane, in either light or dark theme. Kept
@@ -961,7 +964,8 @@ function loadProceduralChunkWorld(chunk, group, cx, cz, centerX, centerZ) {
       const gz = centerZ + q.gz;
 
       // Spawn Stationary Sentinel Guard
-      spawnStationaryGuard(group, q.gx, q.gz, q.face, chunk.guards);
+      // Spawn Stationary Sentinel Guard Pair
+      spawnGuardPair(group, q.gx, q.gz, q.face, chunk.guards);
 
       // Construct a Procedural Zone
       const zName = rng.choice(zoneNames);
@@ -1247,6 +1251,15 @@ function spawnStationaryGuard(group, gx, gz, facingAngle, chunkGuards) {
     headGroup,
     phase: Math.random() * Math.PI * 2
   });
+}
+
+// ── GUARD PAIR SPAWNER — flanks an entrance with two sentinels ──────────────
+function spawnGuardPair(group, gx, gz, facingAngle, chunkGuards, offset = 2.2) {
+  // perpendicular to the facing direction, so guards stand on either side
+  const perpX = Math.cos(facingAngle) * offset;
+  const perpZ = -Math.sin(facingAngle) * offset;
+  spawnStationaryGuard(group, gx - perpX, gz - perpZ, facingAngle, chunkGuards);
+  spawnStationaryGuard(group, gx + perpX, gz + perpZ, facingAngle, chunkGuards);
 }
 
 // ── PLAYABLE GUARD CHARACTER (PLAYER) ─────────────────────────────────────────
