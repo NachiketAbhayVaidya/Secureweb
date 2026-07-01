@@ -1212,7 +1212,7 @@ function spawnStationaryGuard(group, gx, gz, facingAngle, chunkGuards) {
   const guard = new THREE.Group();
   guard.position.set(gx, 0, gz);
   guard.rotation.y = facingAngle;
-  guard.scale.set(2, 2, 2);  
+  guard.scale.set(1.6, 1.6, 1.6);  
   group.add(guard);
 
   // Chassis base
