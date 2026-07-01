@@ -540,6 +540,20 @@ body.light #hud { background: linear-gradient(to bottom, rgba(225,238,248,0.85),
   transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
   box-shadow: 0 4px 15px var(--neon-pink-glow);
 }
+
+.hud-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hud-logo-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.4));
+}
+
 .send-btn:hover { background: var(--neon-cyan); color: var(--bg); transform: translateY(-3px); box-shadow: 0 8px 25px var(--neon-cyan-glow); }
 .send-btn:disabled { background: rgba(255,46,147,0.2); color: var(--text3); cursor: not-allowed; transform: none; box-shadow: none; }
 
