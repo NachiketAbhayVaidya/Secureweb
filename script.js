@@ -4,7 +4,7 @@
    + Aggressive Garbage Collection & Memory Management
    + Procedural Building Generation & Seeded Random
    + Non-Penetrable Rigid Collision Physics (Wall Sliding)
-   + Stationary Sentinel Guards with Sweeping Lights
+   + Roadside Sentinel Guards with Sweeping Lights
    + Mobile Joystick & Responsive UI Controls
    ===================================================== */
 
@@ -600,6 +600,66 @@ function spawnGrassPatch(group, gx, gz, radius, density, rng) {
   return { disc, blades };
 }
 
+// ── STATIONARY SENTINEL GUARD SPAWNER ─────────────────────────────────────────
+function spawnStationaryGuard(group, gx, gz, facingAngle, chunkGuards) {
+  const guard = new THREE.Group();
+  guard.position.set(gx, 0, gz);
+  guard.rotation.y = facingAngle;
+  guard.scale.set(2.0, 2.0, 2.0); // sized to roughly match the player character
+  group.add(guard);
+
+  // Chassis base
+  createCylinder(0.8, 0.8, 0.08, 12, DARK_COLORS.neonCyan, 0, 0.04, 0, guard);
+  // Armor body
+  createBox(0.6, 0.9, 0.3, 0x112233, 0, 0.6, 0, guard);
+  createBox(0.5, 0.5, 0.1, 0x1e3a5f, 0, 0.7, 0.11, guard);
+  // Head
+  createBox(0.35, 0.35, 0.35, 0x223344, 0, 1.25, 0, guard);
+  // Glowing pink eye visor
+  createBox(0.26, 0.06, 0.05, DARK_COLORS.neonPink, 0, 1.3, 0.16, guard);
+  createBox(0.38, 0.1, 0.38, 0x1e3a5f, 0, 1.45, 0, guard); // cap helmet
+
+  // Head mounted visual light cone (volumetric mesh representation)
+  const headGroup = new THREE.Group();
+  headGroup.position.set(0, 1.25, 0.1);
+  guard.add(headGroup);
+
+  const coneGeo = new THREE.ConeGeometry(2, 12, 16, 1, true);
+  const coneMat = new THREE.MeshBasicMaterial({ color: DARK_COLORS.neonCyan, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false });
+  const lightCone = new THREE.Mesh(coneGeo, coneMat);
+  lightCone.rotation.x = Math.PI / 3.5; // angle scan downwards
+  lightCone.position.set(0, -5, 3.5);
+  lightCone.userData.originalColor = DARK_COLORS.neonCyan;
+  headGroup.add(lightCone);
+
+  // Spotlight sweep beam
+  const sweep = new THREE.SpotLight(DARK_COLORS.neonCyan, 1.5, 26, Math.PI / 6, 0.5, 1);
+  sweep.position.set(0, 0.05, 0.15);
+  const target = new THREE.Object3D();
+  target.position.set(0, -8, 6);
+  headGroup.add(sweep);
+  headGroup.add(target);
+  sweep.target = target;
+
+  chunkGuards.push({
+    headGroup,
+    phase: Math.random() * Math.PI * 2
+  });
+}
+
+// ── ROADSIDE GUARD PAIR — stands on both curbs of a road, facing inward ─────
+// axis 'ns' = flanks a north-south running road (fixed x curbs, given z depth)
+// axis 'ew' = flanks an east-west running road   (fixed z curbs, given x depth)
+function spawnRoadsideGuardPair(group, roadCoord, axis, chunkGuards, curbOffset = 9) {
+  if (axis === 'ns') {
+    spawnStationaryGuard(group, -curbOffset, roadCoord,  Math.PI / 2, chunkGuards); // left curb,  faces +x (into road)
+    spawnStationaryGuard(group,  curbOffset, roadCoord, -Math.PI / 2, chunkGuards); // right curb, faces -x (into road)
+  } else {
+    spawnStationaryGuard(group, roadCoord, -curbOffset, 0,       chunkGuards);      // top curb,    faces +z (into road)
+    spawnStationaryGuard(group, roadCoord,  curbOffset, Math.PI, chunkGuards);      // bottom curb, faces -z (into road)
+  }
+}
+
 // ── STATIC STARTING WORLD (CHUNK 0,0) ─────────────────────────────────────────
 let gateLeftDoor = null;
 let gateRightDoor = null;
@@ -889,16 +949,15 @@ function loadStaticStartingWorld(chunk, group) {
     chunk.zones.push(z);
   });
 
-  // Spawn Stationary Guards for Static Buildings
-  spawnGuardPair(group, HX, HZ + 5.5, Math.PI, chunk.guards);   // HQ
-  spawnGuardPair(group, FX, FZ + 6.5, Math.PI, chunk.guards);   // Fire Zone
-  spawnGuardPair(group, CX, CZ - 5.5, 0, chunk.guards);         // Corp
-  spawnGuardPair(group, NX, NZ - 3, 0, chunk.guards);           // Tower
-  spawnGuardPair(group, 21, RZ + 4, 0, chunk.guards);           // Residential
-  spawnGuardPair(group, IX, IZ + 10.5, 0, chunk.guards);        // Industrial
-
-  // Main gate — didn't have a guard before, adding a pair here too
-  spawnGuardPair(group, 0, GZ + 3, 0, chunk.guards);      // Industrial
+  // ── ROADSIDE GUARDS — posted on the road curbs nearest each site's entrance,
+  // standing on the road itself and facing inward across it ──
+  spawnRoadsideGuardPair(group, GZ, 'ns', chunk.guards);        // Main gate
+  spawnRoadsideGuardPair(group, HZ, 'ns', chunk.guards);        // HQ
+  spawnRoadsideGuardPair(group, FZ, 'ns', chunk.guards);        // Fire Zone
+  spawnRoadsideGuardPair(group, CZ, 'ns', chunk.guards);        // Corporate
+  spawnRoadsideGuardPair(group, NZ, 'ns', chunk.guards);        // Watchtower
+  spawnRoadsideGuardPair(group, RZ + 3.5, 'ns', chunk.guards);  // Residential
+  spawnRoadsideGuardPair(group, IZ, 'ns', chunk.guards);        // Industrial
 
   // ── DISTANT SKYLINE — fills the horizon around the starting chunk so it
   // never reads as a flat empty plane, in either light or dark theme. Kept
@@ -963,9 +1022,8 @@ function loadProceduralChunkWorld(chunk, group, cx, cz, centerX, centerZ) {
       const gx = centerX + q.gx;
       const gz = centerZ + q.gz;
 
-      // Spawn Stationary Sentinel Guard
-      // Spawn Stationary Sentinel Guard Pair
-      spawnGuardPair(group, q.gx, q.gz, q.face, chunk.guards);
+      // Spawn Roadside Guard Pair — flanks the nearest road at this quadrant's depth
+      spawnRoadsideGuardPair(group, q.gz, 'ns', chunk.guards);
 
       // Construct a Procedural Zone
       const zName = rng.choice(zoneNames);
@@ -1205,62 +1263,6 @@ function spawnLabBuilding(group, px, pz, rng) {
   const bbox = new THREE.Box3(new THREE.Vector3(px - 6.2, 0, pz - 6.2), new THREE.Vector3(px + 6.2, 13, pz + 6.2));
   bbox.translate(group.position);
   return { bbox };
-}
-
-// ── STATIONARY SENTINEL GUARD SPAWNER ─────────────────────────────────────────
-function spawnStationaryGuard(group, gx, gz, facingAngle, chunkGuards) {
-  const guard = new THREE.Group();
-  guard.position.set(gx, 0, gz);
-  guard.rotation.y = facingAngle;
-  guard.scale.set(1.6, 1.6, 1.6);  
-  group.add(guard);
-
-  // Chassis base
-  createCylinder(0.8, 0.8, 0.08, 12, DARK_COLORS.neonCyan, 0, 0.04, 0, guard);
-  // Armor body
-  createBox(0.6, 0.9, 0.3, 0x112233, 0, 0.6, 0, guard);
-  createBox(0.5, 0.5, 0.1, 0x1e3a5f, 0, 0.7, 0.11, guard);
-  // Head
-  createBox(0.35, 0.35, 0.35, 0x223344, 0, 1.25, 0, guard);
-  // Glowing pink eye visor
-  createBox(0.26, 0.06, 0.05, DARK_COLORS.neonPink, 0, 1.3, 0.16, guard);
-  createBox(0.38, 0.1, 0.38, 0x1e3a5f, 0, 1.45, 0, guard); // cap helmet
-
-  // Head mounted visual light cone (volumetric mesh representation)
-  const headGroup = new THREE.Group();
-  headGroup.position.set(0, 1.25, 0.1);
-  guard.add(headGroup);
-
-  const coneGeo = new THREE.ConeGeometry(2, 12, 16, 1, true);
-  const coneMat = new THREE.MeshBasicMaterial({ color: DARK_COLORS.neonCyan, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false });
-  const lightCone = new THREE.Mesh(coneGeo, coneMat);
-  lightCone.rotation.x = Math.PI / 3.5; // angle scan downwards
-  lightCone.position.set(0, -5, 3.5);
-  lightCone.userData.originalColor = DARK_COLORS.neonCyan;
-  headGroup.add(lightCone);
-
-  // Spotlight sweep beam
-  const sweep = new THREE.SpotLight(DARK_COLORS.neonCyan, 1.5, 18, Math.PI / 6, 0.5, 1);
-  sweep.position.set(0, 0.05, 0.15);
-  const target = new THREE.Object3D();
-  target.position.set(0, -8, 6);
-  headGroup.add(sweep);
-  headGroup.add(target);
-  sweep.target = target;
-
-  chunkGuards.push({
-    headGroup,
-    phase: Math.random() * Math.PI * 2
-  });
-}
-
-// ── GUARD PAIR SPAWNER — flanks an entrance with two sentinels ──────────────
-function spawnGuardPair(group, gx, gz, facingAngle, chunkGuards, offset = 2.2) {
-  // perpendicular to the facing direction, so guards stand on either side
-  const perpX = Math.cos(facingAngle) * offset;
-  const perpZ = -Math.sin(facingAngle) * offset;
-  spawnStationaryGuard(group, gx - perpX, gz - perpZ, facingAngle, chunkGuards);
-  spawnStationaryGuard(group, gx + perpX, gz + perpZ, facingAngle, chunkGuards);
 }
 
 // ── PLAYABLE GUARD CHARACTER (PLAYER) ─────────────────────────────────────────
